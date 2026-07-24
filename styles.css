@@ -136,6 +136,102 @@ a {
   margin: 0 auto 32px;
 }
 
+/* Tabs */
+
+.tabs {
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+  margin-bottom: 40px;
+}
+
+.tab-button {
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: var(--muted);
+  font-family: inherit;
+  font-size: 13px;
+  letter-spacing: 0.1em;
+  padding: 10px 24px;
+  cursor: pointer;
+  transition: border-color 0.2s ease, color 0.2s ease;
+}
+
+.tab-button:hover {
+  color: var(--fg);
+}
+
+.tab-button.is-active {
+  border-color: var(--fg);
+  color: var(--fg);
+}
+
+.tab-panel {
+  display: none;
+}
+
+.tab-panel.is-active {
+  display: block;
+}
+
+/* Series */
+
+.series-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  max-width: 700px;
+  margin: 0 auto;
+}
+
+.series-card {
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  text-align: left;
+}
+
+.series-card summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 18px 20px;
+  cursor: pointer;
+  list-style: none;
+}
+
+.series-card summary::-webkit-details-marker {
+  display: none;
+}
+
+.series-card summary::after {
+  content: '+';
+  color: var(--muted);
+  font-size: 18px;
+}
+
+.series-card[open] summary::after {
+  content: '\2212';
+}
+
+.series-name {
+  font-size: 16px;
+  letter-spacing: 0.08em;
+}
+
+.series-count {
+  color: var(--muted);
+  font-size: 12px;
+  letter-spacing: 0.08em;
+}
+
+.series-card .episode-list {
+  padding: 0 20px 12px;
+}
+
+.series-card .episode {
+  justify-content: flex-start;
+}
+
 /* Episodes */
 
 .episode-list {

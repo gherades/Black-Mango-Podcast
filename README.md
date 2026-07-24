@@ -12,6 +12,14 @@ en el estilo visual de [blackmangofilms.com](https://blackmangofilms.com/).
   solo el botón "Cargar más episodios" — hay que hacer scroll hasta el final,
   donde aparece la sección "Más pódcasts como este", para que cargue todo).
   Para actualizar la lista, repite ese proceso y regenera `episodes.js`.
+- La sección "Episodios" agrupa los capítulos en dos pestañas, usando
+  `assets/series-data.js` (generado a partir de `episodes.js`):
+  - **Series**: capítulos que forman parte de una saga numerada dentro del
+    título (p.ej. "Crímenes Imperfectos 3", "Catástrofes Aéreas 5") más dos
+    agrupaciones temáticas sin número explícito (Mitología, La Mafia).
+  - **Sueltos**: el resto de episodios, sin patrón de serie detectado.
+  - Si añades episodios nuevos, regenera `series-data.js` repitiendo el
+    análisis (buscar título con patrón "Nombre + número" y agrupar).
 
 ## Pendiente de completar
 

@@ -38,8 +38,17 @@
 
   <section id="episodios" class="section">
     <h2>Episodios</h2>
-    <p class="section-note">Episodios recientes, con enlace directo a Spotify.</p>
-    <ul class="episode-list"></ul>
+    <p class="section-note">98 episodios, con enlace directo a Spotify.</p>
+    <div class="tabs" role="tablist">
+      <button class="tab-button is-active" data-tab="series" role="tab" aria-selected="true">Series</button>
+      <button class="tab-button" data-tab="sueltos" role="tab" aria-selected="false">Sueltos</button>
+    </div>
+    <div class="tab-panel is-active" data-panel="series">
+      <div class="series-list"></div>
+    </div>
+    <div class="tab-panel" data-panel="sueltos">
+      <ul class="episode-list" id="standalone-list"></ul>
+    </div>
   </section>
 
   <section id="sobre" class="section">
@@ -77,6 +86,7 @@
 </footer>
 
 <script src="assets/episodes.js"></script>
+<script src="assets/series-data.js"></script>
 <script src="script.js"></script>
 </body>
 </html>

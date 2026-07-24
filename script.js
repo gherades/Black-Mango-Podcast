@@ -1,5 +1,7 @@
 document.addEventListener('DOMContentLoaded', () => {
-  renderEpisodes();
+  renderSeries();
+  renderStandalone();
+  initTabs();
 
   const links = document.querySelectorAll('a[href^="#"]');
   links.forEach((link) => {
@@ -13,18 +15,57 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 });
 
-function renderEpisodes() {
-  const list = document.querySelector('.episode-list');
-  if (!list || typeof EPISODES === 'undefined') return;
+function episodeBadge(title) {
+  const match = title.match(/#(\d+)/) || title.match(/Episodio (\d+)/);
+  return match ? `#${match[1]}` : '';
+}
 
-  list.innerHTML = EPISODES.map((ep) => {
-    const match = ep.title.match(/#(\d+)/) || ep.title.match(/Episodio (\d+)/);
-    const number = match ? `#${match[1]}` : '';
-    return `
-      <li class="episode">
-        <span class="episode-number">${number}</span>
-        <a class="episode-title" href="${ep.url}" target="_blank" rel="noopener">${ep.title}</a>
-      </li>
-    `;
-  }).join('');
+function episodeItemHTML(ep) {
+  return `
+    <li class="episode">
+      <span class="episode-number">${episodeBadge(ep.title)}</span>
+      <a class="episode-title" href="${ep.url}" target="_blank" rel="noopener">${ep.title}</a>
+    </li>
+  `;
+}
+
+function renderStandalone() {
+  const list = document.getElementById('standalone-list');
+  if (!list || typeof STANDALONE_EPISODES === 'undefined') return;
+  list.innerHTML = STANDALONE_EPISODES.map(episodeItemHTML).join('');
+}
+
+function renderSeries() {
+  const container = document.querySelector('.series-list');
+  if (!container || typeof SERIES === 'undefined') return;
+
+  container.innerHTML = SERIES.map((series) => `
+    <details class="series-card">
+      <summary>
+        <span class="series-name">${series.name}</span>
+        <span class="series-count">${series.episodes.length} ep.</span>
+      </summary>
+      <ul class="episode-list">
+        ${series.episodes.map(episodeItemHTML).join('')}
+      </ul>
+    </details>
+  `).join('');
+}
+
+function initTabs() {
+  const buttons = document.querySelectorAll('.tab-button');
+  const panels = document.querySelectorAll('.tab-panel');
+  buttons.forEach((btn) => {
+    btn.addEventListener('click', () => {
+      buttons.forEach((b) => {
+        b.classList.remove('is-active');
+        b.setAttribute('aria-selected', 'false');
+      });
+      panels.forEach((p) => p.classList.remove('is-active'));
+
+      btn.classList.add('is-active');
+      btn.setAttribute('aria-selected', 'true');
+      document.querySelector(`.tab-panel[data-panel="${btn.dataset.tab}"]`).classList.add('is-active');
+    });
+  });
 }
