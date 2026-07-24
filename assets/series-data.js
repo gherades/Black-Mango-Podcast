@@ -3,7 +3,6 @@
 // (Mitología, La Mafia). Episodios sin patrón detectado quedan en STANDALONE_EPISODES.
 const SERIES = [
   { name: "Los Terribles", episodes: [
-    { num: null, epnum: 15, title: "Black Mango Podcast | Episodio 15 | Historia de la Navidad | La terrible historia de Santa Claus y Krampus", url: "https://open.spotify.com/episode/2Z1KF8YLNPPRmwdnLJo6w3" },
     { num: null, epnum: 43, title: "Black Mango #43 - SECTAS TERRIBLES | Historias Reales que No Creerías | Especial Halloween", url: "https://open.spotify.com/episode/0Li0bZTWppJvW2xFAcJCGd" },
     { num: null, epnum: 53, title: "Black Mango #53 - LOS TERRIBLES VIKINGOS | Guerreros, Exploradores y Destructores de Imperios", url: "https://open.spotify.com/episode/53lNJg29fOLAYe9kpHZsti" },
     { num: null, epnum: 57, title: "Black Mango #57 - EL TERRIBLE JAPÓN FEUDAL | Ninjas , Samuráis y Secretos de una era Oscura", url: "https://open.spotify.com/episode/2cewTsgge3BRTKxJDaPL73" },
@@ -16,7 +15,6 @@ const SERIES = [
     { num: null, epnum: 86, title: "Black Mango #86 – Los SECUESTROS más TERRIBLES de la HISTORIA | El Precio de Seguir Vivo", url: "https://open.spotify.com/episode/3i8gs2CnocCvHJjozQx8NE" },
     { num: null, epnum: 89, title: "Black Mango #89 – LA TERRIBLE PREHISTORIA | Así era vivir hace millones de años | Lidia Merenciano", url: "https://open.spotify.com/episode/2ynM4xEEfKhmRkUEb1qTiD" },
     { num: null, epnum: 93, title: "Black Mango #93 - La TERRIBLE ÉPOCA VICTORIANA | El hombre al que llamaron monstruo", url: "https://open.spotify.com/episode/7wuMFZ574x3K1WFGyB0CFg" },
-    { num: null, epnum: 97, title: "Black Mango #97 - Los SECRETOS de DIOS | Las Historias más terribles de la Biblia", url: "https://open.spotify.com/episode/2qS67IAdyxenq2JckTxYES" },
     { num: null, epnum: 99, title: "Black Mango #99 - El TERRIBLE RENACIMIENTO | Leonardo da Vinci contra Miguel Ángel", url: "https://open.spotify.com/episode/0mdCDxdqJkySDYpZAABhBk" },
   ] },
   { name: "Crímenes Sin Resolver", episodes: [
@@ -93,6 +91,7 @@ const SERIES = [
 ];
 
 const STANDALONE_EPISODES = [
+  { epnum: 97, title: "Black Mango #97 - Los SECRETOS de DIOS | Las Historias más terribles de la Biblia", url: "https://open.spotify.com/episode/2qS67IAdyxenq2JckTxYES" },
   { epnum: 87, title: "Black Mango #87 – CHERNOBYL | El mayor DESASTRE nuclear de la HISTORIA", url: "https://open.spotify.com/episode/2mVlNzCtarSq9OYH57gth3" },
   { epnum: 82, title: "Black Mango #82 - El HORROR de las GUERRAS MEDIEVALES | Violencia, Hambre y Muerte", url: "https://open.spotify.com/episode/2u7zWtLpdVfJV6mQzkfTcB" },
   { epnum: 81, title: "Black Mango #81 - Los lugares más PELIGROSOS del MUNDO | Jalis de la Serna | Corea del Norte", url: "https://open.spotify.com/episode/2QRORVpeBV42k0tkYS0bAy" },
@@ -117,10 +116,10 @@ const STANDALONE_EPISODES = [
   { epnum: 20, title: "Black Mango #20 - Curiosidades y misterios Pokémon | Pachi66", url: "https://open.spotify.com/episode/5hqqC3IJl5mN8NmZSdUUfG" },
   { epnum: 19, title: "Black Mango #19 - Los oscuros secretos de Hollywood | Jordi Maquiavello", url: "https://open.spotify.com/episode/3E5FHmAeboRtPHeokIuXjP" },
   { epnum: 16, title: "Black Mango Podcast | Episodio 16 | Pablo Meixe | De trabajar en la calle a llenar teatros", url: "https://open.spotify.com/episode/4kkH1TfggEapEB0n4ikKa7" },
+  { epnum: 15, title: "Black Mango Podcast | Episodio 15 | Historia de la Navidad | La terrible historia de Santa Claus y Krampus", url: "https://open.spotify.com/episode/2Z1KF8YLNPPRmwdnLJo6w3" },
   { epnum: 14, title: "Black Mango Podcast | Episodio 14 | Egipto y sus secretos | Nos echan de Giza", url: "https://open.spotify.com/episode/5ZyHIGx9zmOF3CV1V5jb5V" },
   { epnum: 13, title: "Black Mango Podcast | Episodio 13 | Vladímir Putin | Gta VI | Virus Cancerígeno Chino", url: "https://open.spotify.com/episode/2nQy37H3auSCfON3cUcYTV" },
-  { epnum: 12, title: "Black Mango Podcast | Episodio 12 | Caso Alcasser | Caso Déborah Fernandez", url: "https://open.spotify.com/episode/6BuKBuoFkQk2F2WAwMno8n" },
-  { epnum: 12, title: "Black Mango Podcast | Episodio 12 | Caso Alcasser | Caso Déborah Fernandez", url: "https://open.spotify.com/episode/1lqiuuSBKTJA1nOoC2EnCV" },
+  { epnum: 12, title: "Black Mango Podcast | Episodio 12 | Caso Alcasser | Caso Déborah Fernandez | Daniel Sancho", url: "https://open.spotify.com/episode/6BuKBuoFkQk2F2WAwMno8n" },
   { epnum: 11, title: "Black Mango Podcast | Episodio 11 | Especial Halloween 🎃", url: "https://open.spotify.com/episode/7uHo9w5h08ftDS9A2G1uc9" },
   { epnum: 10, title: "Black Mango Podcast | Episodio 10 | Israel vs Palestina", url: "https://open.spotify.com/episode/6ENu0f27eUpR3ybIM1OyCi" },
   { epnum: 9, title: "Black Mango Podcast | Episodio 9 | Corea del Norte", url: "https://open.spotify.com/episode/0Tr6KNkk5MrxHgQlgKD68m" },
