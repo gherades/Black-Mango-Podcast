@@ -17,8 +17,9 @@ function renderEpisodes() {
   const list = document.querySelector('.episode-list');
   if (!list || typeof EPISODES === 'undefined') return;
 
-  list.innerHTML = EPISODES.map((ep, i) => {
-    const number = String(i + 1).padStart(2, '0');
+  list.innerHTML = EPISODES.map((ep) => {
+    const match = ep.title.match(/#(\d+)/);
+    const number = match ? `#${match[1]}` : '';
     return `
       <li class="episode">
         <span class="episode-number">${number}</span>
