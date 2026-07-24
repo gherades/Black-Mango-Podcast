@@ -35,6 +35,10 @@ function episodeItemHTML(ep) {
         <a href="${ep.ivooxUrl}" target="_blank" rel="noopener" title="Escuchar en iVoox" aria-label="Escuchar en iVoox">
           <img src="assets/icons/ivoox.png" alt="iVoox">
         </a>
+        ${ep.ytUrl ? `
+        <a href="${ep.ytUrl}" target="_blank" rel="noopener" title="Ver en YouTube" aria-label="Ver en YouTube">
+          <img src="assets/icons/youtube.png" alt="YouTube">
+        </a>` : ''}
       </span>
     </li>
   `;

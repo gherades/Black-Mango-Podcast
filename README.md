@@ -32,11 +32,15 @@ en el estilo visual de [blackmangofilms.com](https://blackmangofilms.com/).
   (paginación clásica `..._1.html` a `..._5.html`, 20 episodios por página).
   Ambos se emparejan por número de episodio (coinciden 1:1 con Spotify, 97 en
   los tres). El botón "Escuchar" enlaza a los tres shows completos.
+- También incluye el enlace de YouTube (`ytUrl`) del canal oficial
+  https://www.youtube.com/@blackmangopodcast (playlist "Podcast"), emparejado
+  por número de episodio. Cubre 95 de los 97 (#1 y #2 no están disponibles en
+  el canal). Los episodios 1-16 usan un formato de título distinto en YouTube
+  ("Black Mango #Podcast N") pero corresponden al mismo contenido.
 
 ## Pendiente de completar
 
 - Descripción real del podcast (sección "Sobre").
-- Enlace real a YouTube.
 - Enlaces a redes sociales (Instagram, Twitter/X) y email de contacto.
 
 ## Desarrollo
