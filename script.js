@@ -26,9 +26,15 @@ function episodeItemHTML(ep) {
       <span class="episode-number">${episodeBadge(ep.title)}</span>
       <span class="episode-title">${ep.title}</span>
       <span class="episode-links">
-        <a href="${ep.url}" target="_blank" rel="noopener">Spotify</a>
-        <a href="${ep.appleUrl}" target="_blank" rel="noopener">Apple Podcasts</a>
-        <a href="${ep.ivooxUrl}" target="_blank" rel="noopener">iVoox</a>
+        <a href="${ep.url}" target="_blank" rel="noopener" title="Escuchar en Spotify" aria-label="Escuchar en Spotify">
+          <img src="assets/icons/spotify.png" alt="Spotify">
+        </a>
+        <a href="${ep.appleUrl}" target="_blank" rel="noopener" title="Escuchar en Apple Podcasts" aria-label="Escuchar en Apple Podcasts">
+          <img src="assets/icons/apple-podcasts.png" alt="Apple Podcasts">
+        </a>
+        <a href="${ep.ivooxUrl}" target="_blank" rel="noopener" title="Escuchar en iVoox" aria-label="Escuchar en iVoox">
+          <img src="assets/icons/ivoox.png" alt="iVoox">
+        </a>
       </span>
     </li>
   `;
