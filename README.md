@@ -25,11 +25,15 @@ en el estilo visual de [blackmangofilms.com](https://blackmangofilms.com/).
   - **Sueltos**: el resto de episodios, sin patrón de serie detectado.
   - Si añades episodios nuevos, regenera `series-data.js` repitiendo el
     análisis (buscar título con patrón "Nombre + número" y agrupar).
+- Cada episodio incluye también su enlace de Apple Podcasts (`appleUrl`),
+  obtenido de https://podcasts.apple.com/es/podcast/black-mango-podcast/id1726276206
+  y emparejado por número de episodio (coinciden 1:1 con Spotify, 97 en ambos).
+  El botón "Escuchar" enlaza a ambos shows completos.
 
 ## Pendiente de completar
 
 - Descripción real del podcast (sección "Sobre").
-- Enlaces reales a Apple Podcasts, YouTube, iVoox, etc.
+- Enlaces reales a YouTube, iVoox, etc.
 - Enlaces a redes sociales (Instagram, Twitter/X) y email de contacto.
 
 ## Desarrollo

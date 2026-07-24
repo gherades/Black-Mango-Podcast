@@ -24,7 +24,11 @@ function episodeItemHTML(ep) {
   return `
     <li class="episode">
       <span class="episode-number">${episodeBadge(ep.title)}</span>
-      <a class="episode-title" href="${ep.url}" target="_blank" rel="noopener">${ep.title}</a>
+      <span class="episode-title">${ep.title}</span>
+      <span class="episode-links">
+        <a href="${ep.url}" target="_blank" rel="noopener">Spotify</a>
+        <a href="${ep.appleUrl}" target="_blank" rel="noopener">Apple Podcasts</a>
+      </span>
     </li>
   `;
 }
