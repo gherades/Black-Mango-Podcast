@@ -164,16 +164,21 @@ a {
 .episode-number {
   color: var(--muted);
   width: 32px;
+  flex-shrink: 0;
 }
 
 .episode-title {
   flex: 1;
-  max-width: 360px;
+  max-width: 500px;
   text-align: left;
+  text-transform: none;
+  letter-spacing: normal;
+  border-bottom: 1px solid transparent;
+  transition: border-color 0.2s ease;
 }
 
-.episode-date {
-  color: var(--muted);
+.episode-title:hover {
+  border-color: var(--fg);
 }
 
 /* Platform links */
