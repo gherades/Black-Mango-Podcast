@@ -27,13 +27,16 @@ en el estilo visual de [blackmangofilms.com](https://blackmangofilms.com/).
     análisis (buscar título con patrón "Nombre + número" y agrupar).
 - Cada episodio incluye también su enlace de Apple Podcasts (`appleUrl`),
   obtenido de https://podcasts.apple.com/es/podcast/black-mango-podcast/id1726276206
-  y emparejado por número de episodio (coinciden 1:1 con Spotify, 97 en ambos).
-  El botón "Escuchar" enlaza a ambos shows completos.
+  y su enlace de iVoox (`ivooxUrl`), obtenido de
+  https://www.ivoox.com/podcast-black-mango-podcast_sq_f12370133_1.html
+  (paginación clásica `..._1.html` a `..._5.html`, 20 episodios por página).
+  Ambos se emparejan por número de episodio (coinciden 1:1 con Spotify, 97 en
+  los tres). El botón "Escuchar" enlaza a los tres shows completos.
 
 ## Pendiente de completar
 
 - Descripción real del podcast (sección "Sobre").
-- Enlaces reales a YouTube, iVoox, etc.
+- Enlace real a YouTube.
 - Enlaces a redes sociales (Instagram, Twitter/X) y email de contacto.
 
 ## Desarrollo

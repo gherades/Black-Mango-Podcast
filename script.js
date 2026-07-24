@@ -28,6 +28,7 @@ function episodeItemHTML(ep) {
       <span class="episode-links">
         <a href="${ep.url}" target="_blank" rel="noopener">Spotify</a>
         <a href="${ep.appleUrl}" target="_blank" rel="noopener">Apple Podcasts</a>
+        <a href="${ep.ivooxUrl}" target="_blank" rel="noopener">iVoox</a>
       </span>
     </li>
   `;
