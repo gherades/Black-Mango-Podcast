@@ -75,18 +75,21 @@ const SERIES = [
     { num: 3, epnum: 77, title: "Black Mango #77 - Asesinos en Serie 3 - Halloween | Ed Gein | Edmund Kemper | Andréi Chikatilo", url: "https://open.spotify.com/episode/3YPtKn1TYkuHoaytytjK9m" },
     { num: 4, epnum: 98, title: "Black Mango #98 - Asesinos en Serie 4 - Jeffrey Dahmer | Asesino del Zodiaco | Barbie y Ken asesinos", url: "https://open.spotify.com/episode/2QpfOeMYSvJYprGl9ebDKd" },
   ] },
+  { name: "Robos Imposibles", episodes: [
+    { num: 1, epnum: 33, title: "Black Mango #33 - ROBOS IMPOSIBLES 1 : EL ROBO DEL SIGLO", url: "https://open.spotify.com/episode/5Qq45TKMCJuhksWXQ5hhY2" },
+    { num: 2, epnum: 65, title: "Black Mango #65 - ROBOS IMPOSIBLES 2: El golpe maestro", url: "https://open.spotify.com/episode/5XFiGrfNPj5T0hKqvKwCJ3" },
+    { num: 3, epnum: 95, title: "Black Mango #95 - ROBOS IMPOSIBLES 3 : Los atracos más famosos de la historia", url: "https://open.spotify.com/episode/6wbEqF3mloC8voHQhiFReU" },
+  ] },
   { name: "Experimentos Médicos Terribles", episodes: [
     { num: 1, epnum: 64, title: "Black Mango #64 - Experimentos Médicos Terribles | El Lado Oscuro de la Ciencia | Casos Reales", url: "https://open.spotify.com/episode/3CWGPq8Z27VCrYQNqBSMuU" },
     { num: 2, epnum: 79, title: "Black Mango #79 - Experimentos Médicos Terribles 2 | Casos Reales | El Precio del Conocimiento", url: "https://open.spotify.com/episode/5fItzYUc1qp0lItcURv2D6" },
   ] },
+  { name: "Fugas Imposibles", episodes: [
+    { num: 1, epnum: 51, title: "Black Mango #51 - FUGAS IMPOSIBLES 1: Sobrevivir en el infierno", url: "https://open.spotify.com/episode/5zS6CFT6f6idlnGAHk23lU" },
+    { num: 2, epnum: 91, title: "Black Mango #91 - FUGAS IMPOSIBLES 2 | Atrapados en un INFIERNO sin salida", url: "https://open.spotify.com/episode/3qlQkIMWhdYixJnAP31fC7" },
+  ] },
   { name: "Las Peores Sectas de la Historia", episodes: [
     { num: 2, epnum: 96, title: "Black Mango #96 - Las PEORES SECTAS de la HISTORIA 2 | Manipulación, Terror y Fanatismo", url: "https://open.spotify.com/episode/0qrowoMSjsYkmzhAwlnN4J" },
-  ] },
-  { name: "Robos Imposibles", episodes: [
-    { num: 3, epnum: 95, title: "Black Mango #95 - ROBOS IMPOSIBLES 3 : Los atracos más famosos de la historia", url: "https://open.spotify.com/episode/6wbEqF3mloC8voHQhiFReU" },
-  ] },
-  { name: "Fugas Imposibles", episodes: [
-    { num: 2, epnum: 91, title: "Black Mango #91 - FUGAS IMPOSIBLES 2 | Atrapados en un INFIERNO sin salida", url: "https://open.spotify.com/episode/3qlQkIMWhdYixJnAP31fC7" },
   ] },
 ];
 
@@ -99,15 +102,12 @@ const STANDALONE_EPISODES = [
   { epnum: 78, title: "Black Mango #78 - LA ANTIGUA CHINA | Conspiraciones, Secretos y Castigos", url: "https://open.spotify.com/episode/5VUeih18kdgJZiNiqJ1oaX" },
   { epnum: 72, title: "Black Mango #72 - EL ANTIGUO EGIPTO | Conspiraciones, Secretos y Castigos", url: "https://open.spotify.com/episode/0SuTPjlCLjNMVHh44QBg5j" },
   { epnum: 67, title: "Black Mango #67 - COREA DEL NORTE desde DENTRO | Alejandro Cao de Benós | El Comunismo Real", url: "https://open.spotify.com/episode/6BsmKBywhnFoUhhUsUCCCP" },
-  { epnum: 65, title: "Black Mango #65 - LOS ROBOS MÁS FAMOSOS DE LA HISTORIA: El golpe maestro", url: "https://open.spotify.com/episode/5XFiGrfNPj5T0hKqvKwCJ3" },
   { epnum: 56, title: "Black Mango #56 - LA ANTIGUA GRECIA | Filósofos , Guerreros Letales y Placeres Prohibidos", url: "https://open.spotify.com/episode/0mImYJlR6UQDXUE2yDNyU3" },
   { epnum: 54, title: "Black Mango #54 - LA PESTE NEGRA | Los horrores de la PLAGA más mortal de la historia", url: "https://open.spotify.com/episode/6xLSFU6YMfehaZldhpzfOR" },
-  { epnum: 51, title: "Black Mango #51 - LAS FUGAS MÁS FAMOSAS DE LA HISTORIA: Sobrevivir en el INFIERNO", url: "https://open.spotify.com/episode/5zS6CFT6f6idlnGAHk23lU" },
   { epnum: 46, title: "Black Mango #46 - La existencia de Dios | Personajes reales que lo conocieron", url: "https://open.spotify.com/episode/6bIOCuxfE71nWEFSSJTv9G" },
   { epnum: 42, title: "Black Mango #42 - LOS TEMPLARIOS | Secretos Oscuros, Traición y su Sangrienta Caída", url: "https://open.spotify.com/episode/4B0xuHlJkNHlbJNZVJxZ7L" },
   { epnum: 41, title: "Black Mango #41 - EL TEMIBLE IMPERIO ROMANO", url: "https://open.spotify.com/episode/5GchCj240OjpSaH4t3yOQ6" },
   { epnum: 40, title: "Black Mango #40 - LA TRÁGICA HISTORIA DEL TITANIC", url: "https://open.spotify.com/episode/21YoApsMkVFFFBgDZw1lZG" },
-  { epnum: 33, title: "Black Mango #33 - LOS ROBOS MÁS GRANDES DE LA HISTORIA: El ROBO DEL SIGLO", url: "https://open.spotify.com/episode/5Qq45TKMCJuhksWXQ5hhY2" },
   { epnum: 29, title: "Black Mango #29 - Nutrición Evolutiva | Juan Bola, hábitos ancestrales, somos carnívoros", url: "https://open.spotify.com/episode/6EWTf1WsZFu2GsoSS2FT9C" },
   { epnum: 27, title: "Black Mango #27 - ESTAMOS DESTINADOS A ENFERMAR | Tito Figueroa", url: "https://open.spotify.com/episode/7arj3sAnqllxRYwGO9BsYE" },
   { epnum: 26, title: "Black Mango #26 - Existió Jesús de Nazaret? | Sacerdote Teólogo Explica | Secretos de la Iglesia", url: "https://open.spotify.com/episode/6qYUayWPxFGWGwI1kVn3kw" },
