@@ -7,9 +7,11 @@ en el estilo visual de [blackmangofilms.com](https://blackmangofilms.com/).
 
 - Logo/portada (`assets/spotify-cover-hq.jpg`) y episodios (`assets/episodes.js`)
   obtenidos del show real en Spotify: https://open.spotify.com/show/0WEqNybNBwZPZTM1V1iG2i
-- Spotify solo expone en el reproductor web los ~61 episodios más recientes
-  (del #103 al #42); para actualizar la lista, vuelve a esa página, pulsa
-  "Cargar más episodios" hasta el final y regenera `episodes.js`.
+- Lista completa: 98 episodios, del #103 hasta el "Episodio 1 | Indonesia"
+  (el listado del reproductor web usa scroll infinito con virtualización, no
+  solo el botón "Cargar más episodios" — hay que hacer scroll hasta el final,
+  donde aparece la sección "Más pódcasts como este", para que cargue todo).
+  Para actualizar la lista, repite ese proceso y regenera `episodes.js`.
 
 ## Pendiente de completar
 

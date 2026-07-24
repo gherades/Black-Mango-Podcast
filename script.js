@@ -18,7 +18,7 @@ function renderEpisodes() {
   if (!list || typeof EPISODES === 'undefined') return;
 
   list.innerHTML = EPISODES.map((ep) => {
-    const match = ep.title.match(/#(\d+)/);
+    const match = ep.title.match(/#(\d+)/) || ep.title.match(/Episodio (\d+)/);
     const number = match ? `#${match[1]}` : '';
     return `
       <li class="episode">
