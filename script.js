@@ -1,4 +1,5 @@
 document.addEventListener('DOMContentLoaded', () => {
+  renderAll();
   renderSeries();
   renderStandalone();
   initTabs();
@@ -42,6 +43,15 @@ function episodeItemHTML(ep) {
       </span>
     </li>
   `;
+}
+
+function renderAll() {
+  const list = document.getElementById('all-list');
+  if (!list || typeof SERIES === 'undefined' || typeof STANDALONE_EPISODES === 'undefined') return;
+
+  const all = SERIES.flatMap((series) => series.episodes).concat(STANDALONE_EPISODES);
+  all.sort((a, b) => b.epnum - a.epnum);
+  list.innerHTML = all.map(episodeItemHTML).join('');
 }
 
 function renderStandalone() {

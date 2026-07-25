@@ -38,8 +38,12 @@
     <h2>Episodios</h2>
     <p class="section-note">97 episodios, con enlace directo a Spotify.</p>
     <div class="tabs" role="tablist">
+      <button class="tab-button" data-tab="todos" role="tab" aria-selected="false">Todos</button>
       <button class="tab-button is-active" data-tab="series" role="tab" aria-selected="true">Series</button>
       <button class="tab-button" data-tab="sueltos" role="tab" aria-selected="false">Sueltos</button>
+    </div>
+    <div class="tab-panel" data-panel="todos">
+      <ul class="episode-list" id="all-list"></ul>
     </div>
     <div class="tab-panel is-active" data-panel="series">
       <div class="series-list"></div>
