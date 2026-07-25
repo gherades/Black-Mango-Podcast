@@ -74,15 +74,8 @@ a {
 .hero h1 {
   font-size: clamp(28px, 5vw, 46px);
   font-weight: 600;
-  margin: 0 0 8px;
+  margin: 0 0 32px;
   letter-spacing: 0.08em;
-}
-
-.fan-badge {
-  font-size: 12px;
-  color: var(--muted);
-  letter-spacing: 0.15em;
-  margin: 0 0 40px;
 }
 
 .hero-text {
