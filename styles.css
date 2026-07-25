@@ -190,20 +190,15 @@ a {
   padding: 18px 20px;
   cursor: pointer;
   list-style: none;
+  transition: background 0.2s ease;
+}
+
+.series-card summary:hover {
+  background: rgba(255, 255, 255, 0.03);
 }
 
 .series-card summary::-webkit-details-marker {
   display: none;
-}
-
-.series-card summary::after {
-  content: '+';
-  color: var(--muted);
-  font-size: 18px;
-}
-
-.series-card[open] summary::after {
-  content: '\2212';
 }
 
 .series-name {
@@ -211,10 +206,60 @@ a {
   letter-spacing: 0.08em;
 }
 
+.series-meta {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-shrink: 0;
+}
+
 .series-count {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 4px;
+  padding: 5px 12px;
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  border-radius: 999px;
+}
+
+.series-count-number {
+  font-size: 13px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: var(--fg);
+}
+
+.series-count-label {
+  font-size: 9px;
+  letter-spacing: 0.14em;
   color: var(--muted);
-  font-size: 12px;
-  letter-spacing: 0.08em;
+}
+
+.series-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  border-radius: 50%;
+  color: var(--muted);
+  font-size: 14px;
+  flex-shrink: 0;
+  transition: border-color 0.2s ease, color 0.2s ease;
+}
+
+.series-toggle::after {
+  content: '+';
+}
+
+.series-card[open] .series-toggle {
+  border-color: var(--fg);
+  color: var(--fg);
+}
+
+.series-card[open] .series-toggle::after {
+  content: '\2212';
 }
 
 .series-card .episode-list {

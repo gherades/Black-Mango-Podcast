@@ -62,7 +62,12 @@ function renderSeries() {
     <details class="series-card">
       <summary>
         <span class="series-name">${series.name}</span>
-        <span class="series-count">${series.episodes.length} ep.</span>
+        <span class="series-meta">
+          <span class="series-count">
+            <span class="series-count-number">${series.episodes.length}</span><span class="series-count-label">ep</span>
+          </span>
+          <span class="series-toggle"></span>
+        </span>
       </summary>
       <ul class="episode-list">
         ${series.episodes.map(episodeItemHTML).join('')}
