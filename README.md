@@ -7,13 +7,16 @@ Sitio estático (HTML/CSS/JS) inspirado en el estilo visual de
 
 - Logo/portada (`assets/spotify-cover-hq.jpg`) y episodios (`assets/episodes.js`)
   obtenidos del show real en Spotify: https://open.spotify.com/show/0WEqNybNBwZPZTM1V1iG2i
-- Lista completa: 97 episodios únicos, del #103 hasta el "Episodio 1 | Indonesia"
-  (el listado del reproductor web usa scroll infinito con virtualización, no
-  solo el botón "Cargar más episodios" — hay que hacer scroll hasta el final,
-  donde aparece la sección "Más pódcasts como este", para que cargue todo).
-  Para actualizar la lista, repite ese proceso y regenera `episodes.js`.
-  El "Episodio 12" tenía dos versiones en Spotify (una de pago); se dejó solo
-  la gratuita, con "| Daniel Sancho" añadido al título.
+- Lista completa: 97 episodios únicos en Spotify, del #103 hasta el "Episodio 1 |
+  Indonesia" (el listado del reproductor web usa scroll infinito con
+  virtualización, no solo el botón "Cargar más episodios" — hay que hacer
+  scroll hasta el final, donde aparece la sección "Más pódcasts como este",
+  para que cargue todo). Para actualizar la lista, repite ese proceso y
+  regenera `episodes.js`. El "Episodio 12" tenía dos versiones en Spotify (una
+  de pago); se dejó solo la gratuita, con "| Daniel Sancho" añadido al título.
+- Los episodios 4-8 nunca estuvieron en Spotify/Apple/iVoox, solo en YouTube
+  (`url`, `appleUrl` e `ivooxUrl` vacíos, solo `ytUrl`). Se añadieron a mano
+  a partir de la playlist de YouTube. Total del sitio: 102 episodios.
 - La sección "Episodios" agrupa los capítulos en dos pestañas, usando
   `assets/series-data.js` (generado a partir de `episodes.js`, ya no cargado
   directamente por la página):
@@ -34,10 +37,13 @@ Sitio estático (HTML/CSS/JS) inspirado en el estilo visual de
   los tres). El botón "Escuchar" enlaza a los tres shows completos.
 - También incluye el enlace de YouTube (`ytUrl`) del canal oficial
   https://www.youtube.com/@blackmangopodcast (playlist "Podcast"), emparejado
-  por número de episodio. Cubre los 97 episodios (los primeros, #1-#16, solo
+  por número de episodio. Cubre los 102 episodios (los primeros, #1-#16, solo
   aparecían al abrir un vídeo de la playlist directamente — la vista
   `/playlist` los recorta — y usan un formato de título distinto en YouTube
   ("Black Mango #Podcast N") pero corresponden al mismo contenido).
+- La plantilla de episodio (`episodeItemHTML` en `script.js`) solo dibuja el
+  icono de cada plataforma si esa URL no está vacía, para soportar episodios
+  como el 4-8 que solo tienen `ytUrl`.
 
 ## Pendiente de completar
 
