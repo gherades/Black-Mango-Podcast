@@ -348,6 +348,28 @@ a {
   letter-spacing: 0.1em;
 }
 
+.footer-instagram {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  margin: 0 auto 16px;
+  opacity: 0.8;
+  transition: opacity 0.2s ease, transform 0.2s ease;
+}
+
+.footer-instagram:hover {
+  opacity: 1;
+  transform: translateY(-2px);
+}
+
+.footer-instagram img {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+}
+
 @media (max-width: 600px) {
   .nav {
     gap: 16px;
