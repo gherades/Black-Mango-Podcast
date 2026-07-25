@@ -1,7 +1,7 @@
-# Black Mango Podcast — Fan Page
+# Black Mango Podcast
 
-Fan page no oficial del Black Mango Podcast. Sitio estático (HTML/CSS/JS) inspirado
-en el estilo visual de [blackmangofilms.com](https://blackmangofilms.com/).
+Sitio estático (HTML/CSS/JS) inspirado en el estilo visual de
+[blackmangofilms.com](https://blackmangofilms.com/).
 
 ## Datos del podcast
 
@@ -34,14 +34,14 @@ en el estilo visual de [blackmangofilms.com](https://blackmangofilms.com/).
   los tres). El botón "Escuchar" enlaza a los tres shows completos.
 - También incluye el enlace de YouTube (`ytUrl`) del canal oficial
   https://www.youtube.com/@blackmangopodcast (playlist "Podcast"), emparejado
-  por número de episodio. Cubre 95 de los 97 (#1 y #2 no están disponibles en
-  el canal). Los episodios 1-16 usan un formato de título distinto en YouTube
-  ("Black Mango #Podcast N") pero corresponden al mismo contenido.
+  por número de episodio. Cubre los 97 episodios (los primeros, #1-#16, solo
+  aparecían al abrir un vídeo de la playlist directamente — la vista
+  `/playlist` los recorta — y usan un formato de título distinto en YouTube
+  ("Black Mango #Podcast N") pero corresponden al mismo contenido).
 
 ## Pendiente de completar
 
 - Descripción real del podcast (sección "Sobre").
-- Enlaces a redes sociales (Instagram, Twitter/X) y email de contacto.
 
 ## Desarrollo
 
