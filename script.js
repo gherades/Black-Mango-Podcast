@@ -1,7 +1,6 @@
 document.addEventListener('DOMContentLoaded', () => {
   renderAll();
   renderSeries();
-  renderStandalone();
   initTabs();
 
   const links = document.querySelectorAll('a[href^="#"]');
@@ -53,12 +52,6 @@ function renderAll() {
   const all = SERIES.flatMap((series) => series.episodes).concat(STANDALONE_EPISODES);
   all.sort((a, b) => b.epnum - a.epnum);
   list.innerHTML = all.map(episodeItemHTML).join('');
-}
-
-function renderStandalone() {
-  const list = document.getElementById('standalone-list');
-  if (!list || typeof STANDALONE_EPISODES === 'undefined') return;
-  list.innerHTML = STANDALONE_EPISODES.map(episodeItemHTML).join('');
 }
 
 function renderSeries() {
