@@ -16,9 +16,9 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 });
 
-function episodeBadge(title) {
-  const match = title.match(/#(\d+)/) || title.match(/Episodio (\d+)/);
-  return match ? `#${match[1]}` : '';
+function youtubeThumbnail(ytUrl) {
+  const match = ytUrl && ytUrl.match(/[?&]v=([\w-]+)/);
+  return match ? `https://i.ytimg.com/vi/${match[1]}/hqdefault.jpg` : 'assets/spotify-cover-hq.jpg';
 }
 
 function platformLinkHTML(url, icon, label) {
@@ -31,15 +31,17 @@ function platformLinkHTML(url, icon, label) {
 
 function episodeItemHTML(ep) {
   return `
-    <li class="episode">
-      <span class="episode-number">${episodeBadge(ep.title)}</span>
-      <span class="episode-title">${ep.title}</span>
-      <span class="episode-links">
-        ${platformLinkHTML(ep.url, 'spotify.png', 'Spotify')}
-        ${platformLinkHTML(ep.appleUrl, 'apple-podcasts.png', 'Apple Podcasts')}
-        ${platformLinkHTML(ep.ivooxUrl, 'ivoox.png', 'iVoox')}
-        ${platformLinkHTML(ep.ytUrl, 'youtube.png', 'YouTube')}
-      </span>
+    <li class="episode-card">
+      <img class="episode-cover" src="${youtubeThumbnail(ep.ytUrl)}" alt="" loading="lazy">
+      <div class="episode-card-body">
+        <p class="episode-title">${ep.title}</p>
+        <span class="episode-links">
+          ${platformLinkHTML(ep.url, 'spotify.png', 'Spotify')}
+          ${platformLinkHTML(ep.appleUrl, 'apple-podcasts.png', 'Apple Podcasts')}
+          ${platformLinkHTML(ep.ivooxUrl, 'ivoox.png', 'iVoox')}
+          ${platformLinkHTML(ep.ytUrl, 'youtube.png', 'YouTube')}
+        </span>
+      </div>
     </li>
   `;
 }

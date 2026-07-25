@@ -218,11 +218,7 @@ a {
 }
 
 .series-card .episode-list {
-  padding: 0 20px 12px;
-}
-
-.series-card .episode {
-  justify-content: flex-start;
+  padding: 0 20px 24px;
 }
 
 /* Episodes */
@@ -231,57 +227,62 @@ a {
   list-style: none;
   margin: 0;
   padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 20px;
+}
+
+.episode-card {
   display: flex;
   flex-direction: column;
-  gap: 0;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.02);
+  overflow: hidden;
+  transition: border-color 0.2s ease, transform 0.2s ease;
 }
 
-.episode {
+.episode-card:hover {
+  border-color: rgba(255, 255, 255, 0.35);
+  transform: translateY(-3px);
+}
+
+.episode-cover {
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  object-fit: cover;
+  display: block;
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.episode-card-body {
+  padding: 14px 16px 18px;
   display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-wrap: wrap;
-  row-gap: 8px;
-  column-gap: 20px;
-  padding: 18px 0;
-  border-top: 1px solid rgba(255, 255, 255, 0.08);
-  font-size: 14px;
-}
-
-.episode:last-child {
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-}
-
-.episode-number {
-  color: var(--muted);
-  width: 32px;
-  flex-shrink: 0;
+  flex-direction: column;
+  flex: 1;
 }
 
 .episode-title {
   flex: 1;
-  max-width: 500px;
   text-align: left;
   text-transform: none;
   letter-spacing: normal;
+  font-size: 13px;
+  line-height: 1.4;
+  margin: 0 0 16px;
 }
 
 .episode-links {
   display: flex;
-  flex-wrap: wrap;
   gap: 10px;
-  flex-shrink: 0;
-  width: 100%;
-  justify-content: flex-end;
-  padding-left: 52px;
+  justify-content: flex-start;
 }
 
 .episode-links a {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 28px;
-  height: 28px;
+  width: 26px;
+  height: 26px;
   border-radius: 50%;
   opacity: 0.7;
   transition: opacity 0.2s ease, transform 0.2s ease;
@@ -375,16 +376,8 @@ a {
     gap: 16px;
     font-size: 12px;
   }
-  .episode {
-    flex-direction: column;
-    gap: 4px;
-    text-align: center;
-  }
-  .episode-title {
-    text-align: center;
-  }
-  .episode-links {
-    justify-content: center;
-    padding-left: 0;
+  .episode-list {
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    gap: 14px;
   }
 }
