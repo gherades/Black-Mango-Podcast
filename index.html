@@ -17,6 +17,7 @@
   <nav class="nav">
     <a href="#inicio">Inicio</a>
     <a href="#episodios">Episodios</a>
+    <a href="#mapa">Mapa</a>
     <a href="#sobre">Sobre</a>
     <a href="#escuchar">Escuchar</a>
   </nav>
@@ -26,6 +27,7 @@
 
   <section id="inicio" class="hero">
     <img class="logo" src="assets/spotify-cover-hq.jpg" alt="Black Mango Podcast logo">
+    <p class="hero-kicker">Bienvenidos al nuevo podcast de Black Mango</p>
     <h1>Black Mango Podcast</h1>
     <p class="hero-text">
       Un espacio de fans dedicado al Black Mango Podcast: conversaciones, historias
@@ -39,13 +41,25 @@
     <p class="section-note">102 episodios (5 de ellos solo disponibles en YouTube).</p>
     <div class="tabs" role="tablist">
       <button class="tab-button is-active" data-tab="series" role="tab" aria-selected="true">Series</button>
+      <button class="tab-button" data-tab="documentales" role="tab" aria-selected="false">Documentales</button>
       <button class="tab-button" data-tab="todos" role="tab" aria-selected="false">Todos</button>
     </div>
     <div class="tab-panel is-active" data-panel="series">
       <div class="series-list"></div>
     </div>
+    <div class="tab-panel" data-panel="documentales">
+      <ul class="episode-list" id="docs-list"></ul>
+    </div>
     <div class="tab-panel" data-panel="todos">
       <ul class="episode-list" id="all-list"></ul>
+    </div>
+  </section>
+
+  <section id="mapa" class="section">
+    <h2>El mundo de Black Mango</h2>
+    <p class="section-note">Un recorrido por los países y civilizaciones que hemos destripado en el podcast. Pasa el cursor sobre una chincheta.</p>
+    <div class="world-map">
+      <img src="assets/world-map-illustrated.png" alt="Mapa del mundo" class="world-map-img">
     </div>
   </section>
 
@@ -91,14 +105,15 @@
 </main>
 
 <footer class="site-footer">
-  <a href="#inicio" class="back-to-top">&uarr; Volver arriba</a>
   <a class="footer-instagram" href="https://www.instagram.com/blackmangopodcast/?hl=es" target="_blank" rel="noopener" title="Instagram" aria-label="Instagram">
     <img src="assets/icons/instagram.png" alt="Instagram">
   </a>
+  <p class="footer-applause">Un aplauso!</p>
   <p>BLACK MANGO PODCAST</p>
 </footer>
 
 <script src="assets/series-data.js"></script>
+<script src="assets/map-data.js"></script>
 <script src="script.js"></script>
 </body>
 </html>

@@ -66,9 +66,20 @@ a {
 }
 
 .logo {
+  display: block;
   width: min(260px, 60vw);
   height: auto;
-  margin-bottom: 24px;
+  margin: 0 auto 24px;
+}
+
+.hero-kicker {
+  display: inline-block;
+  margin: 0 0 20px;
+  padding: 8px 20px;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  font-size: 12px;
+  letter-spacing: 0.15em;
+  color: var(--muted);
 }
 
 .hero h1 {
@@ -345,6 +356,132 @@ a {
   object-fit: cover;
 }
 
+/* World map */
+
+#mapa {
+  max-width: 1280px;
+}
+
+.world-map {
+  position: relative;
+  max-width: 1180px;
+  margin: 0 auto;
+}
+
+.world-map-img {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+
+.map-pin {
+  position: absolute;
+  /* la punta de la chincheta cae sobre la coordenada */
+  transform: translate(-50%, -100%);
+  width: 26px;
+  height: 33px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: var(--fg);
+  font-family: inherit;
+  cursor: pointer;
+}
+
+.map-pin-dot {
+  display: block;
+  width: 100%;
+  height: 100%;
+  background: url('assets/pin.png') no-repeat center bottom / contain;
+  transform-origin: 50% 100%;
+  filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.55));
+  transition: transform 0.2s ease, filter 0.2s ease;
+}
+
+.map-pin:hover,
+.map-pin.is-open {
+  z-index: 6;
+}
+
+.map-pin:hover .map-pin-dot,
+.map-pin.is-open .map-pin-dot {
+  transform: scale(1.25);
+  filter: drop-shadow(0 4px 7px rgba(0, 0, 0, 0.7));
+}
+
+.map-popup {
+  display: none;
+  position: absolute;
+  bottom: calc(100% + 10px);
+  left: 50%;
+  transform: translateX(-50%);
+  width: max-content;
+  max-width: 260px;
+  padding: 14px 16px;
+  background: #1a1a1a;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  text-align: left;
+  z-index: 5;
+  cursor: default;
+}
+
+.map-pin:hover .map-popup,
+.map-pin.is-open .map-popup {
+  display: block;
+}
+
+.map-pin.side-below .map-popup {
+  bottom: auto;
+  top: calc(100% + 10px);
+}
+
+.map-pin.align-left .map-popup {
+  left: 0;
+  transform: none;
+}
+
+.map-pin.align-right .map-popup {
+  left: auto;
+  right: 0;
+  transform: none;
+}
+
+.map-popup-title {
+  display: block;
+  font-size: 13px;
+  letter-spacing: 0.1em;
+  margin-bottom: 10px;
+  color: var(--fg);
+}
+
+.map-popup-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.map-popup-episode {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.map-popup-ep-title {
+  text-transform: none;
+  letter-spacing: normal;
+  font-size: 12px;
+  line-height: 1.4;
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.map-popup-episode .episode-links a {
+  width: 20px;
+  height: 20px;
+}
+
 /* Platform links */
 
 .platform-list {
@@ -387,13 +524,6 @@ a {
   color: var(--muted);
 }
 
-.back-to-top {
-  display: inline-block;
-  margin-bottom: 16px;
-  font-size: 13px;
-  letter-spacing: 0.1em;
-}
-
 .footer-instagram {
   display: flex;
   align-items: center;
@@ -416,6 +546,13 @@ a {
   border-radius: 50%;
 }
 
+.footer-applause {
+  font-size: 15px;
+  letter-spacing: 0.15em;
+  color: var(--fg);
+  margin: 0 0 6px;
+}
+
 @media (max-width: 600px) {
   .nav {
     gap: 16px;
@@ -424,5 +561,13 @@ a {
   .episode-list {
     grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
     gap: 14px;
+  }
+  .map-pin {
+    width: 17px;
+    height: 22px;
+  }
+  .map-popup {
+    max-width: 200px;
+    padding: 10px 12px;
   }
 }

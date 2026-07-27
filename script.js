@@ -1,6 +1,8 @@
 document.addEventListener('DOMContentLoaded', () => {
   renderAll();
   renderSeries();
+  renderDocs();
+  renderMap();
   initTabs();
 
   const links = document.querySelectorAll('a[href^="#"]');
@@ -74,6 +76,63 @@ function renderSeries() {
       </ul>
     </details>
   `).join('');
+}
+
+function renderDocs() {
+  const list = document.getElementById('docs-list');
+  if (!list || typeof DOCUMENTALES === 'undefined') return;
+
+  list.innerHTML = DOCUMENTALES.map(episodeItemHTML).join('');
+}
+
+function mapPopupEpisodeHTML(ep) {
+  return `
+    <li class="map-popup-episode">
+      <span class="map-popup-ep-title">${ep.title}</span>
+      <span class="episode-links">
+        ${platformLinkHTML(ep.url, 'spotify.png', 'Spotify')}
+        ${platformLinkHTML(ep.appleUrl, 'apple-podcasts.png', 'Apple Podcasts')}
+        ${platformLinkHTML(ep.ivooxUrl, 'ivoox.png', 'iVoox')}
+        ${platformLinkHTML(ep.ytUrl, 'youtube.png', 'YouTube')}
+      </span>
+    </li>
+  `;
+}
+
+function renderMap() {
+  const container = document.querySelector('.world-map');
+  if (!container || typeof MAP_LOCATIONS === 'undefined') return;
+
+  const pins = MAP_LOCATIONS.map((loc) => {
+    const align = loc.xPct < 15 ? 'align-left' : loc.xPct > 85 ? 'align-right' : 'align-center';
+    const side = loc.yPct < 45 ? 'side-below' : 'side-above';
+    return `
+      <button type="button" class="map-pin ${align} ${side}" style="left:${loc.xPct}%; top:${loc.yPct}%;" aria-label="${loc.name}: ${loc.episodes.length} episodio(s)">
+        <span class="map-pin-dot"></span>
+        <span class="map-popup">
+          <span class="map-popup-title">${loc.name}</span>
+          <ul class="map-popup-list">
+            ${loc.episodes.map(mapPopupEpisodeHTML).join('')}
+          </ul>
+        </span>
+      </button>
+    `;
+  }).join('');
+
+  container.insertAdjacentHTML('beforeend', pins);
+
+  container.querySelectorAll('.map-pin').forEach((pin) => {
+    pin.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const isOpen = pin.classList.contains('is-open');
+      container.querySelectorAll('.map-pin.is-open').forEach((p) => p.classList.remove('is-open'));
+      if (!isOpen) pin.classList.add('is-open');
+    });
+  });
+
+  document.addEventListener('click', () => {
+    container.querySelectorAll('.map-pin.is-open').forEach((p) => p.classList.remove('is-open'));
+  });
 }
 
 function initTabs() {
