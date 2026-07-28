@@ -70,6 +70,30 @@ documentales que hablan de ese país o civilización.
 - La chincheta (`assets/pin.png`) se ancla **por la punta**
   (`transform: translate(-50%, -100%)`), así que la punta marca la coordenada.
 
+## Episodios nuevos automáticos
+
+`.github/workflows/check-new-episodes.yml` ejecuta `scripts/check_new_episodes.py`
+todos los lunes (y también se puede lanzar a mano desde la pestaña Actions,
+botón "Run workflow"). El script:
+
+1. Compara el RSS oficial del show (`https://anchor.fm/s/e0c735b8/podcast/rss`)
+   contra los `epnum` que ya hay en `series-data.js`.
+2. Para cada episodio nuevo, busca su enlace en Apple Podcasts (API de iTunes)
+   y YouTube (feed público del canal, sin API key). iVoox no tiene API
+   pública, así que ese campo se deja en blanco.
+3. Clasifica el título por palabras clave contra las series existentes
+   (`SERIES_KEYWORDS` en el script). Si no reconoce ninguna Y el título tiene
+   pinta de arrancar una saga nueva (frase en mayúsculas + número, como
+   "ROBOS IMPOSIBLES 1"), lo añade igualmente como suelto pero marcado con un
+   comentario `// NECESITA REVISIÓN` — y todo el lote de ese run se manda por
+   Pull Request en vez de directo a `main`, para que alguien decida si hace
+   falta agrupar o renombrar algo (igual que se ha hecho siempre a mano en
+   este proyecto).
+4. Si todo lo del lote se clasificó con confianza, se compromete y se sube
+   directo a `main`.
+
+Para probarlo en local sin tocar nada: `python3 scripts/check_new_episodes.py --dry-run`.
+
 ## Pendiente de completar
 
 - Descripción real del podcast (sección "Sobre").

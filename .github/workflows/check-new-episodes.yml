@@ -1,0 +1,68 @@
+name: Buscar episodios nuevos
+
+on:
+  schedule:
+    # Lunes 09:00 UTC. El podcast publica ~semanalmente; ajustar si cambia el ritmo.
+    - cron: "0 9 * * 1"
+  workflow_dispatch: {} # botón "Run workflow" para lanzarlo a mano
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Configurar identidad de git
+        run: |
+          git config user.name "gherades"
+          git config user.email "31408334+gherades@users.noreply.github.com"
+
+      - name: Ejecutar el script
+        id: run
+        run: |
+          set +e
+          python3 scripts/check_new_episodes.py > /tmp/output.log 2>&1
+          code=$?
+          cat /tmp/output.log
+          echo "output<<EOF" >> "$GITHUB_OUTPUT"
+          tail -n1 /tmp/output.log >> "$GITHUB_OUTPUT"
+          echo "EOF" >> "$GITHUB_OUTPUT"
+          exit $code
+
+      - name: Decidir ruta (main directo vs Pull Request)
+        id: route
+        run: |
+          json='${{ steps.run.outputs.output }}'
+          route=$(python3 -c "import json,sys; print(json.loads(sys.argv[1]).get('route','none'))" "$json")
+          added=$(python3 -c "import json,sys; print(len(json.loads(sys.argv[1]).get('added',[])))" "$json")
+          echo "route=$route" >> "$GITHUB_OUTPUT"
+          echo "added=$added" >> "$GITHUB_OUTPUT"
+
+      - name: Publicar directo a main (casos claros)
+        if: steps.route.outputs.route == 'main'
+        run: |
+          git add -A
+          git commit -m "Añadir ${{ steps.route.outputs.added }} episodio(s) nuevo(s) (automático)"
+          git push origin main
+
+      - name: Abrir Pull Request (hay algo que revisar)
+        if: steps.route.outputs.route == 'pull_request'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          branch="episodios-nuevos/$(date +%Y%m%d-%H%M%S)"
+          git checkout -b "$branch"
+          git add -A
+          git commit -m "Añadir episodio(s) nuevo(s), alguno necesita revisión"
+          git push origin "$branch"
+          gh pr create --base main --head "$branch" \
+            --title "Episodio(s) nuevo(s): revisar clasificación" \
+            --body "Se han detectado episodios nuevos en el feed de Spotify. Al menos uno no encajó con ninguna serie existente por palabras clave (podría ser el arranque de una saga nueva, o simplemente un episodio suelto). Se ha añadido igualmente como suelto, marcado con un comentario \`// NECESITA REVISIÓN\` en \`assets/series-data.js\` — revisa si hace falta agruparlo o renombrarlo antes de fusionar. También falta siempre el enlace de iVoox (no tiene API pública) y a veces el de Apple/YouTube si el episodio es muy reciente y esas plataformas aún no lo han indexado; se pueden completar a mano en este PR."
