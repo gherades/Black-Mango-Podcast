@@ -25,6 +25,9 @@ jobs:
           git config user.name "gherades"
           git config user.email "31408334+gherades@users.noreply.github.com"
 
+      - name: Test de regresión del clasificador
+        run: python3 scripts/test_classify.py
+
       - name: Ejecutar el script
         id: run
         run: |
@@ -39,18 +42,25 @@ jobs:
 
       - name: Decidir ruta (main directo vs Pull Request)
         id: route
+        env:
+          # pasado como variable de entorno, NUNCA interpolado con ${{ }}
+          # dentro del script: el título del episodio viene de un feed
+          # externo (no de confianza) y un ${{ }} ahí sería una inyección
+          # de comandos clásica de GitHub Actions.
+          SUMMARY_JSON: ${{ steps.run.outputs.output }}
         run: |
-          json='${{ steps.run.outputs.output }}'
-          route=$(python3 -c "import json,sys; print(json.loads(sys.argv[1]).get('route','none'))" "$json")
-          added=$(python3 -c "import json,sys; print(len(json.loads(sys.argv[1]).get('added',[])))" "$json")
+          route=$(python3 -c "import json,os; print(json.loads(os.environ['SUMMARY_JSON']).get('route','none'))")
+          added=$(python3 -c "import json,os; print(len(json.loads(os.environ['SUMMARY_JSON']).get('added',[])))")
           echo "route=$route" >> "$GITHUB_OUTPUT"
           echo "added=$added" >> "$GITHUB_OUTPUT"
 
       - name: Publicar directo a main (casos claros)
         if: steps.route.outputs.route == 'main'
+        env:
+          ADDED_COUNT: ${{ steps.route.outputs.added }}
         run: |
           git add -A
-          git commit -m "Añadir ${{ steps.route.outputs.added }} episodio(s) nuevo(s) (automático)"
+          git commit -m "Añadir ${ADDED_COUNT} episodio(s) nuevo(s) (automático)"
           git push origin main
 
       - name: Abrir Pull Request (hay algo que revisar)

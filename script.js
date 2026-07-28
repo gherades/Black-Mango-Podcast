@@ -4,6 +4,7 @@ document.addEventListener('DOMContentLoaded', () => {
   renderDocs();
   renderMap();
   initTabs();
+  initMapOutsideClick();
 
   const links = document.querySelectorAll('a[href^="#"]');
   links.forEach((link) => {
@@ -17,15 +18,23 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 });
 
+function escapeHtml(str) {
+  const div = document.createElement('div');
+  div.textContent = str == null ? '' : String(str);
+  return div.innerHTML;
+}
+
 function youtubeThumbnail(ytUrl) {
-  const match = ytUrl && ytUrl.match(/[?&]v=([\w-]+)/);
+  // soporta tanto watch?v=ID (todos los episodios actuales) como youtu.be/ID,
+  // por si algún enlace futuro llega en el formato corto
+  const match = ytUrl && ytUrl.match(/(?:[?&]v=|youtu\.be\/)([\w-]+)/);
   return match ? `https://i.ytimg.com/vi/${match[1]}/hqdefault.jpg` : 'assets/spotify-cover-hq.jpg';
 }
 
 function platformLinkHTML(url, icon, label) {
   if (!url) return '';
   return `
-    <a href="${url}" target="_blank" rel="noopener" title="Escuchar en ${label}" aria-label="Escuchar en ${label}">
+    <a href="${escapeHtml(url)}" target="_blank" rel="noopener" title="Escuchar en ${label}" aria-label="Escuchar en ${label}">
       <img src="assets/icons/${icon}" alt="${label}">
     </a>`;
 }
@@ -33,9 +42,9 @@ function platformLinkHTML(url, icon, label) {
 function episodeItemHTML(ep) {
   return `
     <li class="episode-card">
-      <img class="episode-cover" src="${youtubeThumbnail(ep.ytUrl)}" alt="" loading="lazy">
+      <img class="episode-cover" src="${escapeHtml(youtubeThumbnail(ep.ytUrl))}" alt="" loading="lazy">
       <div class="episode-card-body">
-        <p class="episode-title">${ep.title}</p>
+        <p class="episode-title">${escapeHtml(ep.title)}</p>
         <span class="episode-links">
           ${platformLinkHTML(ep.url, 'spotify.png', 'Spotify')}
           ${platformLinkHTML(ep.appleUrl, 'apple-podcasts.png', 'Apple Podcasts')}
@@ -63,7 +72,7 @@ function renderSeries() {
   container.innerHTML = SERIES.map((series) => `
     <details class="series-card">
       <summary>
-        <span class="series-name">${series.name}</span>
+        <span class="series-name">${escapeHtml(series.name)}</span>
         <span class="series-meta">
           <span class="series-count">
             <span class="series-count-number">${series.episodes.length}</span><span class="series-count-label">ep</span>
@@ -88,7 +97,7 @@ function renderDocs() {
 function mapPopupEpisodeHTML(ep) {
   return `
     <li class="map-popup-episode">
-      <span class="map-popup-ep-title">${ep.title}</span>
+      <span class="map-popup-ep-title">${escapeHtml(ep.title)}</span>
       <span class="episode-links">
         ${platformLinkHTML(ep.url, 'spotify.png', 'Spotify')}
         ${platformLinkHTML(ep.appleUrl, 'apple-podcasts.png', 'Apple Podcasts')}
@@ -107,10 +116,10 @@ function renderMap() {
     const align = loc.xPct < 15 ? 'align-left' : loc.xPct > 85 ? 'align-right' : 'align-center';
     const side = loc.yPct < 45 ? 'side-below' : 'side-above';
     return `
-      <button type="button" class="map-pin ${align} ${side}" style="left:${loc.xPct}%; top:${loc.yPct}%;" aria-label="${loc.name}: ${loc.episodes.length} episodio(s)">
+      <button type="button" class="map-pin ${align} ${side}" style="left:${loc.xPct}%; top:${loc.yPct}%;" aria-label="${escapeHtml(loc.name)}: ${loc.episodes.length} episodio(s)">
         <span class="map-pin-dot"></span>
         <span class="map-popup">
-          <span class="map-popup-title">${loc.name}</span>
+          <span class="map-popup-title">${escapeHtml(loc.name)}</span>
           <ul class="map-popup-list">
             ${loc.episodes.map(mapPopupEpisodeHTML).join('')}
           </ul>
@@ -129,9 +138,14 @@ function renderMap() {
       if (!isOpen) pin.classList.add('is-open');
     });
   });
+}
 
+// aparte de renderMap(): es un comportamiento de página (cerrar chinchetas
+// al hacer clic fuera), no algo ligado a cada render del mapa. Si viviera
+// dentro de renderMap(), cada llamada apilaría un listener de document más.
+function initMapOutsideClick() {
   document.addEventListener('click', () => {
-    container.querySelectorAll('.map-pin.is-open').forEach((p) => p.classList.remove('is-open'));
+    document.querySelectorAll('.map-pin.is-open').forEach((p) => p.classList.remove('is-open'));
   });
 }
 

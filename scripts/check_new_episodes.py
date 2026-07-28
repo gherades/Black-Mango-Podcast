@@ -46,7 +46,6 @@ except ImportError:
 
 ROOT = Path(__file__).resolve().parent.parent
 SERIES_DATA = ROOT / "assets" / "series-data.js"
-EPISODES_DATA = ROOT / "assets" / "episodes.js"
 INDEX_HTML = ROOT / "index.html"
 
 SPOTIFY_RSS = "https://anchor.fm/s/e0c735b8/podcast/rss"
@@ -155,6 +154,33 @@ def existing_epnums(series_js_text):
     return {int(n) for n in re.findall(r"epnum:\s*(\d+)", series_js_text)}
 
 
+def series_names_in_data(series_js_text):
+    return re.findall(r'\{ name: "([^"]+)", episodes: \[', series_js_text)
+
+
+def warn_uncovered_series(series_js_text):
+    """SERIES_KEYWORDS es una lista mantenida a mano, aparte de SERIES.
+
+    Si alguien crea una serie nueva a mano en series-data.js y no añade su
+    palabra clave aquí, los episodios futuros de esa serie no se
+    reconocerán (caerán como sueltos, sin romper nada — pero en silencio).
+    Este chequeo hace el desfase visible en vez de silencioso: se imprime
+    en cada ejecución, no solo cuando hay episodios nuevos que clasificar.
+    """
+    covered = {name for _, name in SERIES_KEYWORDS}
+    existing = series_names_in_data(series_js_text)
+    sin_cubrir = [n for n in existing if n not in covered]
+    if sin_cubrir:
+        print(
+            "AVISO: estas series de series-data.js no tienen ninguna palabra "
+            "clave en SERIES_KEYWORDS — sus episodios futuros no se "
+            "reconocerán automáticamente:"
+        )
+        for n in sin_cubrir:
+            print(f"  - {n}")
+    return sin_cubrir
+
+
 def classify(title):
     """Devuelve (nombre_de_serie_o_None, necesita_revision, motivo)."""
     low = title.lower()
@@ -174,9 +200,21 @@ def classify(title):
     return None, False, None
 
 
+def js_string(value):
+    """Escapa un valor como literal de string de JS/JSON válido.
+
+    Los títulos vienen de un feed externo (no de confianza): si alguno
+    trajera unas comillas dobles sin escapar, una interpolación ingenua
+    (f'"{title}"') rompería la sintaxis de todo series-data.js y se
+    caería el sitio entero. json.dumps produce un literal de string
+    válido tanto en JSON como en JS.
+    """
+    return json.dumps(value, ensure_ascii=False)
+
+
 def js_episode_entry(epnum, title, spotify_url, apple_url, yt_url, indent="    "):
-    parts = [f'epnum: {epnum}', f'title: "{title}"', f'url: "{spotify_url}"',
-              f'appleUrl: "{apple_url}"', 'ivooxUrl: ""', f'ytUrl: "{yt_url}"']
+    parts = [f'epnum: {epnum}', f'title: {js_string(title)}', f'url: {js_string(spotify_url)}',
+              f'appleUrl: {js_string(apple_url)}', 'ivooxUrl: ""', f'ytUrl: {js_string(yt_url)}']
     return indent + "{ " + ", ".join(parts) + " },"
 
 
@@ -202,21 +240,6 @@ def update_episode_count_note(series_js_text):
         print(f"  index.html actualizado: {total} episodios, {youtube_only} solo en YouTube")
 
 
-def prepend_to_episodes_js(title, spotify_url, apple_url, ivoox_url, yt_url):
-    """Mantiene assets/episodes.js (el dataset plano histórico) al día."""
-    if not EPISODES_DATA.exists():
-        return
-    text = EPISODES_DATA.read_text(encoding="utf-8")
-    entry = (
-        f'  {{ title: "{title}", url: "{spotify_url}", appleUrl: "{apple_url}", '
-        f'ivooxUrl: "{ivoox_url}", ytUrl: "{yt_url}" }},'
-    )
-    marker = "const EPISODES = ["
-    idx = text.index(marker) + len(marker)
-    text = text[:idx] + "\n" + entry + text[idx:]
-    EPISODES_DATA.write_text(text, encoding="utf-8")
-
-
 def insert_into_series(series_js_text, series_name, entry_line):
     pattern = re.compile(
         r'(\{ name: "' + re.escape(series_name) + r'", episodes: \[)(.*?)(\n  \] \})',
@@ -240,6 +263,7 @@ def main():
     series_js_text = SERIES_DATA.read_text(encoding="utf-8")
     known = existing_epnums(series_js_text)
     print(f"  {len(known)} episodios ya en series-data.js (más alto: #{max(known)})")
+    warn_uncovered_series(series_js_text)
 
     new_ones = sorted(
         (ep for ep in feed_episodes if ep[0] not in known),
@@ -282,8 +306,6 @@ def main():
             series_js_text = insert_into_standalone(series_js_text, entry_line)
 
         added.append((epnum, title, series_name))
-        if not dry_run:
-            prepend_to_episodes_js(title, spotify_url, apple_url, "", yt_url)
 
     if dry_run:
         print("\n--dry-run: no se ha escrito ni comprometido nada.")

@@ -5,21 +5,20 @@ Sitio estático (HTML/CSS/JS) inspirado en el estilo visual de
 
 ## Datos del podcast
 
-- Logo/portada (`assets/spotify-cover-hq.jpg`) y episodios (`assets/episodes.js`)
-  obtenidos del show real en Spotify: https://open.spotify.com/show/0WEqNybNBwZPZTM1V1iG2i
+- Logo/portada (`assets/spotify-cover-hq.jpg`) y episodios
+  (`assets/series-data.js`) obtenidos del show real en Spotify:
+  https://open.spotify.com/show/0WEqNybNBwZPZTM1V1iG2i
 - Lista completa: 97 episodios únicos en Spotify, del #103 hasta el "Episodio 1 |
   Indonesia" (el listado del reproductor web usa scroll infinito con
   virtualización, no solo el botón "Cargar más episodios" — hay que hacer
   scroll hasta el final, donde aparece la sección "Más pódcasts como este",
-  para que cargue todo). Para actualizar la lista, repite ese proceso y
-  regenera `episodes.js`. El "Episodio 12" tenía dos versiones en Spotify (una
+  para que cargue todo). El "Episodio 12" tenía dos versiones en Spotify (una
   de pago); se dejó solo la gratuita, con "| Daniel Sancho" añadido al título.
 - Los episodios 4-8 nunca estuvieron en Spotify/Apple/iVoox, solo en YouTube
   (`url`, `appleUrl` e `ivooxUrl` vacíos, solo `ytUrl`). Se añadieron a mano
-  a partir de la playlist de YouTube. Total del sitio: 102 episodios.
+  a partir de la playlist de YouTube. Total del sitio: 103 episodios.
 - La sección "Episodios" agrupa los capítulos en tres pestañas, usando
-  `assets/series-data.js` (generado a partir de `episodes.js`, ya no cargado
-  directamente por la página):
+  `assets/series-data.js` (la única fuente de datos que carga la página):
   - **Series**: capítulos que forman parte de una saga numerada dentro del
     título (p.ej. "Crímenes Imperfectos 3", "Catástrofes Aéreas 5"), más
     agrupaciones temáticas sin número explícito (Mitología, La Mafia, Los
@@ -29,8 +28,10 @@ Sitio estático (HTML/CSS/JS) inspirado en el estilo visual de
     `PLGR6l-llOTj52NWifz_9red7xPk-56WDf`, contenido aparte de los episodios
     numerados (array `DOCUMENTALES`, solo tienen `ytUrl`).
   - **Todos**: series y episodios sueltos juntos, ordenados por número.
-  - Si añades episodios nuevos, regenera `series-data.js` repitiendo el
-    análisis (buscar título con patrón "Nombre + número" y agrupar).
+  - Si creas una serie nueva a mano en `SERIES`, añade también su palabra
+    clave en `SERIES_KEYWORDS` (`scripts/check_new_episodes.py`) — si no,
+    el script de episodios automáticos (ver más abajo) no reconocerá esa
+    serie y avisará por consola en cada ejecución mientras falte.
 - Cada episodio incluye también su enlace de Apple Podcasts (`appleUrl`),
   obtenido de https://podcasts.apple.com/es/podcast/black-mango-podcast/id1726276206
   y su enlace de iVoox (`ivooxUrl`), obtenido de
