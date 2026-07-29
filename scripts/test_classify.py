@@ -4,11 +4,20 @@
 Sin framework (consistente con el resto del proyecto: cero dependencias).
 Uso: python3 scripts/test_classify.py
 """
+import contextlib
+import io
 import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent))
-from check_new_episodes import classify, js_string, warn_uncovered_series  # noqa: E402
+from check_new_episodes import (  # noqa: E402
+    classify,
+    js_episode_entry,
+    js_string,
+    series_names_in_data,
+    insert_into_series,
+    warn_uncovered_series,
+)
 
 CASOS_SERIE = [
     ('Black Mango #103 - CRÍMENES IMPERFECTOS 5 | Los 4 de Idaho', 'Crímenes Imperfectos'),
@@ -68,15 +77,47 @@ def main():
         '{ name: "Los Terribles", episodes: [] },\n'
         '{ name: "Una Serie De Prueba Sin Keyword", episodes: [] },'
     )
-    sin_cubrir_sim = warn_uncovered_series(simulado)
+    # este caso es deliberadamente falso (solo para probar la detección) —
+    # se silencia su AVISO por stdout para no ensuciar el log real del
+    # workflow con algo que parece (pero no es) un problema de verdad.
+    # Se vio pasar exactamente eso en la primera ejecución real en Actions.
+    with contextlib.redirect_stdout(io.StringIO()):
+        sin_cubrir_sim = warn_uncovered_series(simulado)
     if sin_cubrir_sim != ["Una Serie De Prueba Sin Keyword"]:
         fallos += 1
         print(f"FALLO: warn_uncovered_series no detectó bien el caso simulado: {sin_cubrir_sim}")
 
+    # Regresión: dos episodios NUEVOS de la MISMA serie existente en un
+    # mismo run. Encontrado por inspección real de logs — insert_into_series
+    # reconstruía el cierre "] }" con un espacio de más, así que la 2ª
+    # llamada no reconocía el cierre de la 1ª y fusionaba esa serie con la
+    # siguiente completa. Se prueba contra los datos reales (solo lectura).
+    original = real.read_text(encoding="utf-8")
+    series_antes = series_names_in_data(original)
+    idx_mafia = series_antes.index("La Mafia")
+    siguiente_serie = series_antes[idx_mafia + 1]
+
+    t = original
+    e1 = js_episode_entry(901, "Black Mango #901 - LA MAFIA DE PRUEBA UNO | test", "https://s/1", "", "")
+    e2 = js_episode_entry(902, "Black Mango #902 - LA MAFIA DE PRUEBA DOS | test", "https://s/2", "", "")
+    t = insert_into_series(t, "La Mafia", e1)
+    t = insert_into_series(t, "La Mafia", e2)
+
+    series_despues = series_names_in_data(t)
+    if series_despues != series_antes:
+        fallos += 1
+        print(f"FALLO: insertar 2 episodios en 'La Mafia' alteró la lista de series: {series_despues}")
+
+    bloque_mafia = t[t.index('name: "La Mafia"'): t.index(f'name: "{siguiente_serie}"')]
+    if "#901" not in bloque_mafia or "#902" not in bloque_mafia:
+        fallos += 1
+        print("FALLO: los dos episodios nuevos no quedaron ambos dentro del bloque de 'La Mafia'")
+
     if fallos:
         print(f"\n{fallos} fallo(s).")
         return 1
-    print(f"OK: {len(CASOS_SERIE)} casos de serie + {len(CASOS_REVISION)} de revisión + escapado.")
+    print(f"OK: {len(CASOS_SERIE)} casos de serie + {len(CASOS_REVISION)} de revisión + "
+          f"escapado + cobertura de keywords + 2 episodios misma serie en un run.")
     return 0
 
 

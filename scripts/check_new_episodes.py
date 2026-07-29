@@ -220,7 +220,10 @@ def js_episode_entry(epnum, title, spotify_url, apple_url, yt_url, indent="    "
 
 def insert_into_standalone(series_js_text, entry_line, comment=None):
     marker = "const STANDALONE_EPISODES = ["
-    idx = series_js_text.index(marker) + len(marker)
+    pos = series_js_text.find(marker)
+    if pos == -1:
+        raise RuntimeError(f"no se encontró '{marker}' en series-data.js")
+    idx = pos + len(marker)
     prefix = f"\n    // {comment}" if comment else ""
     return series_js_text[:idx] + prefix + "\n" + entry_line + series_js_text[idx:]
 
@@ -246,7 +249,14 @@ def insert_into_series(series_js_text, series_name, entry_line):
         re.S,
     )
     def repl(m):
-        return m.group(1) + m.group(2) + "\n" + entry_line + "\n " + m.group(3)[1:]
+        # group(3) (el cierre "\n  ] }") se reinserta TAL CUAL, sin tocarlo.
+        # Antes se reconstruía a mano ("\n " + group(3)[1:]) y colaba un
+        # espacio de más en cada llamada. Con dos episodios nuevos de la
+        # misma serie en un mismo run, la 2ª llamada ya no encontraba el
+        # cierre de 2 espacios (ahora eran 3) y el ".*?" no-greedy se comía
+        # de un tirón la serie entera hasta el cierre de la SIGUIENTE serie
+        # sin tocar — fusionando dos series en una silenciosamente.
+        return m.group(1) + m.group(2) + "\n" + entry_line + m.group(3)
     new_text, n = pattern.subn(repl, series_js_text, count=1)
     if n != 1:
         raise RuntimeError(f"no se encontró la serie '{series_name}' en series-data.js")

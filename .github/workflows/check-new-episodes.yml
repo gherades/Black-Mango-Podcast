@@ -10,6 +10,14 @@ permissions:
   contents: write
   pull-requests: write
 
+# evita que dos ejecuciones solapadas (la programada y un "Run workflow"
+# manual, por ejemplo) lean el mismo estado de series-data.js a la vez y
+# una de las dos pierda su "git push" — o, peor, ambas hagan commit sobre
+# checkouts distintos y una pise a la otra.
+concurrency:
+  group: check-new-episodes
+  cancel-in-progress: false
+
 jobs:
   check:
     runs-on: ubuntu-latest
