@@ -1,0 +1,3 @@
+# Solo para desarrollo/tests (medir cobertura). El sitio en sí y
+# check_new_episodes.py no tienen ninguna dependencia instalada.
+coverage>=7.6

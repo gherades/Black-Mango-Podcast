@@ -95,6 +95,82 @@ botón "Run workflow"). El script:
 
 Para probarlo en local sin tocar nada: `python3 scripts/check_new_episodes.py --dry-run`.
 
+## Tests
+
+Dos suites independientes, cada una con las herramientas mínimas de su
+ecosistema — nada que el sitio en sí necesite en producción.
+
+### Python (`scripts/check_new_episodes.py`)
+
+```bash
+python3 -m unittest scripts.test_check_new_episodes -v
+```
+
+35 tests, cero llamadas de red reales: `fetch()` (el único punto por el que
+pasan Spotify/Apple/YouTube) se mockea siempre con `unittest.mock`, así que
+la suite es determinista y corre en milisegundos. Incluye una prueba de
+extremo a extremo de `main()` completo (RSS → clasificar → escribir →
+resumen JSON) contra copias temporales de `series-data.js`/`index.html`,
+nunca los archivos reales.
+
+Cobertura medida de verdad (no un número inventado):
+
+```bash
+python3 -m pip install -r requirements-dev.txt
+python3 -m coverage run -m unittest scripts.test_check_new_episodes
+python3 -m coverage report -m --include='scripts/check_new_episodes.py'
+```
+
+**98%** (170/173 líneas). Las 3 líneas sin cubrir son el fallback de
+`certifi` cuando no está instalado (depende del entorno de quien ejecute
+el test) y el `if __name__ == "__main__":` final — ambas de bajo valor
+para testear y se dejan así a propósito, no por descuido.
+
+### JavaScript (`script.js`)
+
+```bash
+npm install
+npm test
+```
+
+29 tests con el runner nativo de Node (`node:test` + `node:assert`, cero
+frameworks) y `jsdom` como única dependencia de desarrollo (no se usa en
+producción: `index.html` sigue cargando `script.js` con un `<script>`
+normal, sin build step). Dos niveles:
+
+- **Unitarios rápidos** (`test/pure.test.js`, `test/dom.test.js`): cada
+  función de `script.js` con datos de mentira pequeños y a medida.
+  Las funciones que solo construyen HTML como texto (`escapeHtml`,
+  `episodeItemHTML`...) se cargan con `vm` y un `document` de mentira —
+  no hace falta jsdom para ellas. Las que tocan el DOM de verdad
+  (`renderMap`, `initTabs`...) sí usan jsdom.
+- **Un test de integración** (`test/integration.test.js`): carga el
+  `index.html` + `series-data.js` + `map-data.js` + `script.js` **reales**
+  juntos, para detectar desajustes de cableado entre ellos que los tests
+  unitarios (con sus propios datos) no pueden ver. A propósito hay solo
+  uno — la pirámide de tests no necesita más para un sitio de este tamaño.
+
+**Sobre medir cobertura de `script.js`**: `node --test --experimental-test-coverage`
+y `c8` no le atribuyen líneas cubiertas, aunque los tests sí lo ejecuten de
+verdad. La causa es cómo se carga: `script.js` no es un módulo (no tiene
+`export`, es JS de toda la vida pensado para un `<script>` normal), así que
+los tests lo cargan con `vm`/`eval` en vez de `require()` — y V8 no asocia
+ese código evaluado dinámicamente con el archivo en disco para el reporte
+de cobertura, aunque internamente sí sepa qué se ejecutó (se puede
+comprobar leyendo el JSON crudo de `NODE_V8_COVERAGE`). Convertir
+`script.js` en un módulo real arreglaría esto, pero sería cambiar la
+arquitectura del sitio solo para complacer una herramienta — no vale la
+pena. La cobertura real, verificada a mano: **las 11 funciones de
+`script.js` tienen al menos un test dedicado**, varias con casos de borde
+explícitos (título con HTML, plataforma sin enlace, sin datos definidos).
+
+### CI
+
+`.github/workflows/tests.yml` corre ambas suites en cada push y Pull
+Request a `main` (con cobertura de Python exigida ≥90%) — independiente
+del workflow semanal de episodios nuevos, que solo corre su propio test
+de regresión antes de tocar nada (ver más abajo).
+
 ## Pendiente de completar
 
 - Descripción real del podcast (sección "Sobre").

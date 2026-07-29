@@ -1,0 +1,13 @@
+{
+  "name": "black-mango-podcast-site",
+  "private": true,
+  "description": "Tests para script.js. El sitio en sí sigue sin build step: index.html carga script.js directamente con <script>, esto es solo tooling de desarrollo.",
+  "type": "commonjs",
+  "scripts": {
+    "test": "node --test test/",
+    "test:coverage": "node --test --experimental-test-coverage test/"
+  },
+  "devDependencies": {
+    "jsdom": "^25.0.1"
+  }
+}

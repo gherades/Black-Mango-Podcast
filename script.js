@@ -18,10 +18,13 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 });
 
+// Reemplazo de caracteres explícito (no vía el DOM): así se puede probar
+// con un test unitario normal, sin necesitar un navegador ni jsdom.
+const HTML_ESCAPES = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' };
+
 function escapeHtml(str) {
-  const div = document.createElement('div');
-  div.textContent = str == null ? '' : String(str);
-  return div.innerHTML;
+  if (str == null) return '';
+  return String(str).replace(/[&<>"']/g, (ch) => HTML_ESCAPES[ch]);
 }
 
 function youtubeThumbnail(ytUrl) {

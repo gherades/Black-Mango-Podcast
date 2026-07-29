@@ -33,8 +33,8 @@ jobs:
           git config user.name "gherades"
           git config user.email "31408334+gherades@users.noreply.github.com"
 
-      - name: Test de regresión del clasificador
-        run: python3 scripts/test_classify.py
+      - name: Tests del script (ver también .github/workflows/tests.yml)
+        run: python3 -m unittest scripts.test_check_new_episodes -v
 
       - name: Ejecutar el script
         id: run

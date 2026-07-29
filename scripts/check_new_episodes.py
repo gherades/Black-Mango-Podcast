@@ -241,6 +241,14 @@ def update_episode_count_note(series_js_text):
     if n == 1:
         INDEX_HTML.write_text(new_html, encoding="utf-8")
         print(f"  index.html actualizado: {total} episodios, {youtube_only} solo en YouTube")
+    else:
+        # antes esto fallaba en silencio: si el texto de index.html cambiara
+        # de forma (o el patrón dejara de encajar), el contador simplemente
+        # se quedaría desactualizado sin ningún aviso en el log.
+        print(
+            f"AVISO: no se pudo actualizar el contador de episodios en index.html "
+            f"(se esperaba encontrar el texto exactamente 1 vez, se encontró {n})."
+        )
 
 
 def insert_into_series(series_js_text, series_name, entry_line):
@@ -305,8 +313,15 @@ def main():
             # se inserta igualmente (como suelto, la ubicación segura por
             # defecto) pero marcado con un comentario, para que el PR tenga
             # un cambio real que revisar y no solo un aviso en el aire.
-            print(f"  -> NECESITA REVISION: {reason}")
-            series_js_text = insert_into_standalone(series_js_text, entry_line, comment=reason)
+            # El prefijo "NECESITA REVISIÓN" tiene que quedar literalmente
+            # en el archivo (no solo en este print): es lo que hace el
+            # comentario greppable en el diff del PR, y es lo que el propio
+            # cuerpo del PR (ver el workflow) le dice a quien lo revise que
+            # busque.
+            print(f"  -> NECESITA REVISIÓN: {reason}")
+            series_js_text = insert_into_standalone(
+                series_js_text, entry_line, comment=f"NECESITA REVISIÓN: {reason}"
+            )
             needs_review.append((epnum, title, reason))
         elif series_name:
             print(f"  -> clasificado en la serie existente '{series_name}'")
