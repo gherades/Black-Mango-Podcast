@@ -79,9 +79,14 @@ botón "Run workflow"). El script:
 
 1. Compara el RSS oficial del show (`https://anchor.fm/s/e0c735b8/podcast/rss`)
    contra los `epnum` que ya hay en `series-data.js`.
-2. Para cada episodio nuevo, busca su enlace en Apple Podcasts (API de iTunes)
-   y YouTube (feed público del canal, sin API key). iVoox no tiene API
-   pública, así que ese campo se deja en blanco.
+2. Para cada episodio nuevo, busca su enlace en Apple Podcasts (API de
+   iTunes), YouTube (feed público del canal, sin API key) e iVoox. iVoox no
+   tiene API pública, así que su enlace se extrae del HTML de la página 1
+   del propio podcast en ivoox.com — como un episodio recién detectado es,
+   por definición, de los últimos publicados, siempre está ahí (no hace
+   falta recorrer la paginación). Si alguna plataforma aún no ha indexado
+   el episodio (pasa a veces si es muy reciente), ese campo se deja en
+   blanco para completar a mano.
 3. Clasifica el título por palabras clave contra las series existentes
    (`SERIES_KEYWORDS` en el script). Si no reconoce ninguna Y el título tiene
    pinta de arrancar una saga nueva (frase en mayúsculas + número, como
@@ -106,12 +111,12 @@ ecosistema — nada que el sitio en sí necesite en producción.
 python3 -m unittest scripts.test_check_new_episodes -v
 ```
 
-35 tests, cero llamadas de red reales: `fetch()` (el único punto por el que
-pasan Spotify/Apple/YouTube) se mockea siempre con `unittest.mock`, así que
-la suite es determinista y corre en milisegundos. Incluye una prueba de
-extremo a extremo de `main()` completo (RSS → clasificar → escribir →
-resumen JSON) contra copias temporales de `series-data.js`/`index.html`,
-nunca los archivos reales.
+40 tests, cero llamadas de red reales: `fetch()` (el único punto por el que
+pasan Spotify/Apple/YouTube/iVoox) se mockea siempre con `unittest.mock`,
+así que la suite es determinista y corre en milisegundos. Incluye una
+prueba de extremo a extremo de `main()` completo (RSS → clasificar →
+escribir → resumen JSON) contra copias temporales de
+`series-data.js`/`index.html`, nunca los archivos reales.
 
 Cobertura medida de verdad (no un número inventado):
 
@@ -121,7 +126,7 @@ python3 -m coverage run -m unittest scripts.test_check_new_episodes
 python3 -m coverage report -m --include='scripts/check_new_episodes.py'
 ```
 
-**98%** (170/173 líneas). Las 3 líneas sin cubrir son el fallback de
+**98%** (181/184 líneas). Las 3 líneas sin cubrir son el fallback de
 `certifi` cuando no está instalado (depende del entorno de quien ejecute
 el test) y el `if __name__ == "__main__":` final — ambas de bajo valor
 para testear y se dejan así a propósito, no por descuido.

@@ -8,8 +8,10 @@ Fuentes (todas públicas, sin credenciales):
   - Apple Podcasts: API de búsqueda de iTunes (episodio por episodio).
   - YouTube: feed público Atom del canal (sin API key, solo los últimos 15
     vídeos, pero eso basta para detectar episodios nuevos).
-  - iVoox no tiene API pública. Su enlace se deja en blanco para completar
-    a mano cuando haga falta (ver README).
+  - iVoox no tiene API pública: se extrae del HTML de la página 1 del propio
+    podcast en ivoox.com (mismo sitio de donde se sacaron a mano los enlaces
+    existentes, ver README). Solo hace falta la página 1: un episodio recién
+    detectado como nuevo es, por definición, de los últimos publicados.
 
 Cada episodio nuevo se clasifica por palabras clave contra las series ya
 existentes en SERIES. Si no encaja en ninguna, se añade a
@@ -51,6 +53,7 @@ INDEX_HTML = ROOT / "index.html"
 SPOTIFY_RSS = "https://anchor.fm/s/e0c735b8/podcast/rss"
 APPLE_SHOW_ID = "1726276206"
 YOUTUBE_CHANNEL_ID = "UCL1ITQtr7ogwPN-5w96kG7Q"
+IVOOX_PODCAST_URL = "https://www.ivoox.com/podcast-black-mango-podcast_sq_f12370133_1.html"
 
 UA = "Mozilla/5.0 (compatible; BlackMangoEpisodeChecker/1.0)"
 
@@ -150,6 +153,19 @@ def get_youtube_url(epnum):
     return ""
 
 
+def get_ivoox_url(epnum):
+    try:
+        html = fetch(IVOOX_PODCAST_URL).decode("utf-8", errors="replace")
+    except Exception:
+        return ""
+    # el guion justo después del número evita que "105" case con "1050":
+    # si el siguiente carácter no es "-", no es el mismo episodio.
+    m = re.search(rf'href="(/black-mango-{epnum}-[a-z0-9-]*_rf_\d+_1\.html)"', html)
+    if m:
+        return "https://www.ivoox.com" + m.group(1)
+    return ""
+
+
 def existing_epnums(series_js_text):
     return {int(n) for n in re.findall(r"epnum:\s*(\d+)", series_js_text)}
 
@@ -212,9 +228,9 @@ def js_string(value):
     return json.dumps(value, ensure_ascii=False)
 
 
-def js_episode_entry(epnum, title, spotify_url, apple_url, yt_url, indent="    "):
+def js_episode_entry(epnum, title, spotify_url, apple_url, ivoox_url, yt_url, indent="    "):
     parts = [f'epnum: {epnum}', f'title: {js_string(title)}', f'url: {js_string(spotify_url)}',
-              f'appleUrl: {js_string(apple_url)}', 'ivooxUrl: ""', f'ytUrl: {js_string(yt_url)}']
+              f'appleUrl: {js_string(apple_url)}', f'ivooxUrl: {js_string(ivoox_url)}', f'ytUrl: {js_string(yt_url)}']
     return indent + "{ " + ", ".join(parts) + " },"
 
 
@@ -301,13 +317,14 @@ def main():
         series_name, review, reason = classify(title)
 
         apple_url = get_apple_url(epnum)
+        ivoox_url = get_ivoox_url(epnum)
         yt_url = get_youtube_url(epnum)
         print(f"  Spotify: {spotify_url}")
         print(f"  Apple:   {apple_url or '(no encontrado todavía)'}")
+        print(f"  iVoox:   {ivoox_url or '(no encontrado todavía)'}")
         print(f"  YouTube: {yt_url or '(no encontrado todavía)'}")
-        print(f"  iVoox:   (sin API pública, se deja en blanco)")
 
-        entry_line = js_episode_entry(epnum, title, spotify_url, apple_url, yt_url)
+        entry_line = js_episode_entry(epnum, title, spotify_url, apple_url, ivoox_url, yt_url)
 
         if review:
             # se inserta igualmente (como suelto, la ubicación segura por

@@ -68,6 +68,16 @@ YOUTUBE_FIXTURE = """<?xml version="1.0"?>
 <yt:videoId>videoId104</yt:videoId></entry>
 </feed>"""
 
+# HTML mínimo con la forma real de la página del podcast en ivoox.com (solo
+# los <a href> importan: get_ivoox_url() no mira nada más). Incluye el "105"
+# junto a un "1050" a propósito: si la regexp no exigiera el guion justo
+# después del número, "105" encajaría por error dentro de "1050".
+IVOOX_FIXTURE = """<html><body>
+<a href="/black-mango-105-la-mafia-suiza-audios-mp3_rf_178000105_1.html">#105</a>
+<a href="/black-mango-104-civilizaciones-perdidas-los-audios-mp3_rf_177850316_1.html">#104</a>
+<a href="/black-mango-1050-episodio-trampa-audios-mp3_rf_999999_1.html">trampa numérica</a>
+</body></html>"""
+
 
 def fake_fetch(url):
     """side_effect de fetch(): responde según qué endpoint se pida."""
@@ -77,6 +87,8 @@ def fake_fetch(url):
         return ITUNES_FIXTURE.encode("utf-8")
     if "youtube.com/feeds" in url:
         return YOUTUBE_FIXTURE.encode("utf-8")
+    if "ivoox.com" in url:
+        return IVOOX_FIXTURE.encode("utf-8")
     raise AssertionError(f"URL no esperada en un test: {url}")
 
 
@@ -167,10 +179,14 @@ class EscapingTests(unittest.TestCase):
 
 class JsEpisodeEntryTests(unittest.TestCase):
     def test_genera_un_objeto_js_bien_formado_y_parseable(self):
-        entry = cne.js_episode_entry(999, 'Título "raro"', "https://s", "https://a", "https://y")
+        entry = cne.js_episode_entry(999, 'Título "raro"', "https://s", "https://a", "https://i", "https://y")
         self.assertTrue(entry.strip().startswith("{ epnum: 999,"))
         self.assertTrue(entry.rstrip().endswith("},"))
-        self.assertIn('ivooxUrl: ""', entry)  # iVoox siempre vacío al añadir
+        self.assertIn('ivooxUrl: "https://i"', entry)
+
+    def test_ivoox_no_encontrado_queda_vacio_igual_que_las_demas_plataformas(self):
+        entry = cne.js_episode_entry(999, "Título", "https://s", "", "", "")
+        self.assertIn('ivooxUrl: ""', entry)
 
 
 class SeriesDataMutationTests(unittest.TestCase):
@@ -185,7 +201,7 @@ class SeriesDataMutationTests(unittest.TestCase):
         cls.real_text = REAL_SERIES_DATA.read_text(encoding="utf-8")
 
     def test_insert_into_standalone_antepone_la_entrada(self):
-        entry = cne.js_episode_entry(999, "Test", "", "", "")
+        entry = cne.js_episode_entry(999, "Test", "", "", "", "")
         result = cne.insert_into_standalone(self.real_text, entry)
         marker = "const STANDALONE_EPISODES = ["
         pos = result.index(marker) + len(marker)
@@ -193,7 +209,7 @@ class SeriesDataMutationTests(unittest.TestCase):
         self.assertIn("epnum: 999", result[pos:pos + 200])
 
     def test_insert_into_standalone_con_comentario_de_revision(self):
-        entry = cne.js_episode_entry(999, "Test", "", "", "")
+        entry = cne.js_episode_entry(999, "Test", "", "", "", "")
         result = cne.insert_into_standalone(self.real_text, entry, comment="motivo de prueba")
         self.assertIn("// motivo de prueba", result)
         self.assertLess(result.index("// motivo de prueba"), result.index("epnum: 999"))
@@ -204,7 +220,7 @@ class SeriesDataMutationTests(unittest.TestCase):
         self.assertIn("STANDALONE_EPISODES", str(ctx.exception))
 
     def test_insert_into_series_coloca_la_entrada_en_la_serie_correcta(self):
-        entry = cne.js_episode_entry(999, "Black Mango #999 - test", "", "", "")
+        entry = cne.js_episode_entry(999, "Black Mango #999 - test", "", "", "", "")
         result = cne.insert_into_series(self.real_text, "La Mafia", entry)
         bloque = result[result.index('name: "La Mafia"'):result.index('] },', result.index('name: "La Mafia"'))]
         self.assertIn("#999", bloque)
@@ -227,8 +243,8 @@ class SeriesDataMutationTests(unittest.TestCase):
         siguiente_serie = series_antes[idx_mafia + 1]
 
         t = self.real_text
-        e1 = cne.js_episode_entry(901, "Black Mango #901 - LA MAFIA DE PRUEBA UNO | test", "https://s/1", "", "")
-        e2 = cne.js_episode_entry(902, "Black Mango #902 - LA MAFIA DE PRUEBA DOS | test", "https://s/2", "", "")
+        e1 = cne.js_episode_entry(901, "Black Mango #901 - LA MAFIA DE PRUEBA UNO | test", "https://s/1", "", "", "")
+        e2 = cne.js_episode_entry(902, "Black Mango #902 - LA MAFIA DE PRUEBA DOS | test", "https://s/2", "", "", "")
         t = cne.insert_into_series(t, "La Mafia", e1)
         t = cne.insert_into_series(t, "La Mafia", e2)
 
@@ -306,6 +322,31 @@ class NetworkParsingTests(unittest.TestCase):
     @patch("check_new_episodes.fetch", side_effect=lambda url: (_ for _ in ()).throw(TimeoutError("boom")))
     def test_get_youtube_url_no_propaga_excepciones_de_red(self, _mock):
         self.assertEqual(cne.get_youtube_url(105), "")
+
+    @patch("check_new_episodes.fetch", side_effect=fake_fetch)
+    def test_get_ivoox_url_encuentra_el_episodio_por_numero(self, _mock):
+        url = cne.get_ivoox_url(105)
+        self.assertEqual(
+            url,
+            "https://www.ivoox.com/black-mango-105-la-mafia-suiza-audios-mp3_rf_178000105_1.html",
+        )
+
+    @patch("check_new_episodes.fetch", side_effect=fake_fetch)
+    def test_get_ivoox_url_no_confunde_105_con_1050(self, _mock):
+        # sin el guion exigido justo tras el número, "105" habría casado
+        # por error dentro del "black-mango-1050-..." de la trampa del fixture
+        url = cne.get_ivoox_url(105)
+        self.assertNotIn("1050", url)
+
+    @patch("check_new_episodes.fetch", side_effect=fake_fetch)
+    def test_get_ivoox_url_episodio_no_encontrado_devuelve_vacio(self, _mock):
+        self.assertEqual(cne.get_ivoox_url(999999), "")
+
+    @patch("check_new_episodes.fetch", side_effect=lambda url: (_ for _ in ()).throw(TimeoutError("boom")))
+    def test_get_ivoox_url_no_propaga_excepciones_de_red(self, _mock):
+        # igual que Apple/YouTube: si ivoox.com falla, el campo queda vacío
+        # y se completa a mano, no se cae todo el script
+        self.assertEqual(cne.get_ivoox_url(105), "")
 
     def test_fetch_manda_user_agent_y_devuelve_bytes(self):
         # el único test que baja hasta fetch() en sí (todo lo demás mockea
@@ -418,6 +459,7 @@ class MainOrchestrationTests(unittest.TestCase):
         nuevo_texto = self.series_data.read_text(encoding="utf-8")
         self.assertIn("#105", nuevo_texto)
         self.assertIn("videoId105", nuevo_texto)  # el enlace de YouTube se resolvió
+        self.assertIn("black-mango-105-la-mafia-suiza", nuevo_texto)  # y el de iVoox también
         # el #104 del fixture YA estaba en los datos reales: no debe duplicarse
         self.assertEqual(nuevo_texto.count("epnum: 104"), 1)
 
