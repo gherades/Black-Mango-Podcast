@@ -133,7 +133,7 @@ npm install
 npm test
 ```
 
-29 tests con el runner nativo de Node (`node:test` + `node:assert`, cero
+27 tests con el runner nativo de Node (`node:test` + `node:assert`, cero
 frameworks) y `jsdom` como única dependencia de desarrollo (no se usa en
 producción: `index.html` sigue cargando `script.js` con un `<script>`
 normal, sin build step). Dos niveles:
