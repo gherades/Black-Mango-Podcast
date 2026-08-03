@@ -117,6 +117,12 @@ describe('episodeItemHTML', () => {
       'el titulo no deberia aparecer sin escapar: seria XSS almacenado');
     assert.match(html, /&lt;img src=x onerror=alert\(1\)&gt;/);
   });
+
+  test('la miniatura tiene un fallback a la portada si falla la carga (vídeo borrado/privado)', () => {
+    const { episodeItemHTML } = loadPure();
+    const html = episodeItemHTML(epBase);
+    assert.match(html, /onerror="this\.onerror=null;this\.src='assets\/spotify-cover-hq\.jpg';"/);
+  });
 });
 
 describe('mapPopupEpisodeHTML', () => {

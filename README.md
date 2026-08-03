@@ -111,12 +111,15 @@ ecosistema — nada que el sitio en sí necesite en producción.
 python3 -m unittest scripts.test_check_new_episodes -v
 ```
 
-40 tests, cero llamadas de red reales: `fetch()` (el único punto por el que
+46 tests, cero llamadas de red reales: `fetch()` (el único punto por el que
 pasan Spotify/Apple/YouTube/iVoox) se mockea siempre con `unittest.mock`,
 así que la suite es determinista y corre en milisegundos. Incluye una
 prueba de extremo a extremo de `main()` completo (RSS → clasificar →
 escribir → resumen JSON) contra copias temporales de
-`series-data.js`/`index.html`, nunca los archivos reales.
+`series-data.js`/`index.html`, nunca los archivos reales — incluida una
+que cuenta las llamadas a `fetch()` para comprobar que Apple/YouTube/iVoox
+se piden una sola vez por ejecución aunque el lote traiga varios episodios
+nuevos (ver "Rendimiento" más abajo).
 
 Cobertura medida de verdad (no un número inventado):
 
@@ -126,7 +129,7 @@ python3 -m coverage run -m unittest scripts.test_check_new_episodes
 python3 -m coverage report -m --include='scripts/check_new_episodes.py'
 ```
 
-**98%** (181/184 líneas). Las 3 líneas sin cubrir son el fallback de
+**98%** (191/194 líneas). Las 3 líneas sin cubrir son el fallback de
 `certifi` cuando no está instalado (depende del entorno de quien ejecute
 el test) y el `if __name__ == "__main__":` final — ambas de bajo valor
 para testear y se dejan así a propósito, no por descuido.
@@ -176,9 +179,24 @@ Request a `main` (con cobertura de Python exigida ≥90%) — independiente
 del workflow semanal de episodios nuevos, que solo corre su propio test
 de regresión antes de tocar nada (ver más abajo).
 
-## Pendiente de completar
+## Rendimiento
 
-- Descripción real del podcast (sección "Sobre").
+- Los iconos (`assets/pin.png`, `assets/icons/*.png`) están reescalados con
+  `sips` a un tamaño acorde a como se muestran en pantalla (2-4x su tamaño
+  real en CSS, de sobra para retina). Los originales pesaban 5-15x más de
+  lo necesario sin verse mejor a 26px — si se reemplaza alguno, mantener
+  ese criterio en vez de subir el export tal cual sale de un banco de
+  iconos.
+- El favicon (`assets/favicon.png`, 48×48) es una copia reducida de
+  `assets/spotify-cover-hq.jpg`, no el archivo original: un favicon no
+  necesita 640×640 ni 130 KB.
+- `scripts/check_new_episodes.py`: `get_apple_url`/`get_youtube_url`/
+  `get_ivoox_url` reciben el contenido ya descargado como argumento en vez
+  de descargarlo cada una por su cuenta — ninguna de las tres fuentes
+  depende del número de episodio (siempre devuelven su listado completo
+  más reciente), así que `main()` las pide una sola vez por ejecución con
+  `fetch_optional()`, sin importar cuántos episodios nuevos traiga el
+  lote.
 
 ## Desarrollo
 

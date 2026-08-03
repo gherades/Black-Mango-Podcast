@@ -102,6 +102,8 @@ describe('renderMap', () => {
     assert.equal(pins[0].style.left, '27.8%');
     assert.equal(pins[0].style.top, '40.9%');
     assert.equal(pins[0].getAttribute('aria-label'), 'Cuba: 1 episodio(s)');
+    assert.equal(pins[0].getAttribute('aria-expanded'), 'false',
+      'una chincheta recién pintada no debería anunciarse como expandida');
   });
 
   test('un nombre "malicioso" no crea ningún elemento nuevo, queda como texto plano', () => {
@@ -137,15 +139,20 @@ describe('renderMap', () => {
 
     cuba.dispatchEvent(new Event('click', { bubbles: true }));
     assert.equal(cuba.classList.contains('is-open'), true);
+    assert.equal(cuba.getAttribute('aria-expanded'), 'true',
+      'aria-expanded debe seguir a is-open, no solo la clase visual');
 
     // clic en OTRA chincheta cierra la primera y abre la segunda (no ambas)
     japon.dispatchEvent(new Event('click', { bubbles: true }));
     assert.equal(cuba.classList.contains('is-open'), false);
+    assert.equal(cuba.getAttribute('aria-expanded'), 'false');
     assert.equal(japon.classList.contains('is-open'), true);
+    assert.equal(japon.getAttribute('aria-expanded'), 'true');
 
     // clic fuera del mapa cierra la que quedaba abierta
     document.body.dispatchEvent(new Event('click', { bubbles: true }));
     assert.equal(japon.classList.contains('is-open'), false);
+    assert.equal(japon.getAttribute('aria-expanded'), 'false');
   });
 
   test('llamar a initMapOutsideClick una sola vez basta (no se acumulan listeners)', () => {

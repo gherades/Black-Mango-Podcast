@@ -108,12 +108,26 @@ def get_spotify_episodes():
     return out
 
 
-def get_apple_url(epnum):
+def fetch_optional(url, decode=False):
+    """fetch() que nunca lanza: una fuente caída deja ese hueco vacío para
+    completar a mano, no tumba todo el run (ver get_apple_url/get_youtube_url/
+    get_ivoox_url, que reciben lo que esto devuelva)."""
     try:
-        data = json.loads(fetch(
-            f"https://itunes.apple.com/lookup?id={APPLE_SHOW_ID}"
-            f"&entity=podcastEpisode&limit=200"
-        ))
+        raw = fetch(url)
+    except Exception:
+        return None
+    return raw.decode("utf-8", errors="replace") if decode else raw
+
+
+def get_apple_url(epnum, itunes_raw):
+    # itunes_raw: bytes/str de UNA sola llamada a iTunes para todo el lote
+    # (ver main) — el listado de episodios no depende de epnum, así que
+    # pedirlo otra vez por cada episodio nuevo sería repetir la misma
+    # descarga sin necesidad.
+    if itunes_raw is None:
+        return ""
+    try:
+        data = json.loads(itunes_raw)
     except Exception:
         return ""
     needle = f"#{epnum} "
@@ -132,16 +146,17 @@ def get_apple_url(epnum):
     return ""
 
 
-def get_youtube_url(epnum):
-    try:
-        xml_bytes = fetch(
-            f"https://www.youtube.com/feeds/videos.xml?channel_id={YOUTUBE_CHANNEL_ID}"
-        )
-    except Exception:
+def get_youtube_url(epnum, youtube_raw):
+    # youtube_raw: mismo motivo que en get_apple_url — un solo feed para
+    # todo el lote, no uno por episodio.
+    if youtube_raw is None:
         return ""
     ns = {"yt": "http://www.youtube.com/xml/schemas/2015",
           "atom": "http://www.w3.org/2005/Atom"}
-    root = ET.fromstring(xml_bytes)
+    try:
+        root = ET.fromstring(youtube_raw)
+    except Exception:
+        return ""
     needle = f"#{epnum} "
     needle_alt = f"#{epnum}-"
     for entry in root.findall("atom:entry", ns):
@@ -153,14 +168,14 @@ def get_youtube_url(epnum):
     return ""
 
 
-def get_ivoox_url(epnum):
-    try:
-        html = fetch(IVOOX_PODCAST_URL).decode("utf-8", errors="replace")
-    except Exception:
+def get_ivoox_url(epnum, ivoox_html):
+    # ivoox_html: la página 1 de ivoox.com, descargada una sola vez para
+    # todo el lote en main() — mismo motivo que Apple/YouTube arriba.
+    if ivoox_html is None:
         return ""
     # el guion justo después del número evita que "105" case con "1050":
     # si el siguiente carácter no es "-", no es el mismo episodio.
-    m = re.search(rf'href="(/black-mango-{epnum}-[a-z0-9-]*_rf_\d+_1\.html)"', html)
+    m = re.search(rf'href="(/black-mango-{epnum}-[a-z0-9-]*_rf_\d+_1\.html)"', ivoox_html)
     if m:
         return "https://www.ivoox.com" + m.group(1)
     return ""
@@ -312,13 +327,26 @@ def main():
     added = []
     needs_review = []
 
+    # Una sola descarga de cada fuente para TODO el lote: ni Apple, ni
+    # YouTube ni iVoox dependen de qué episodio se busque (siempre devuelven
+    # su listado completo más reciente), así que pedirlas dentro del bucle
+    # de abajo — una vez por episodio — repetiría la misma descarga sin
+    # necesidad si el lote trae más de un episodio nuevo.
+    itunes_raw = fetch_optional(
+        f"https://itunes.apple.com/lookup?id={APPLE_SHOW_ID}&entity=podcastEpisode&limit=200"
+    )
+    youtube_raw = fetch_optional(
+        f"https://www.youtube.com/feeds/videos.xml?channel_id={YOUTUBE_CHANNEL_ID}"
+    )
+    ivoox_html = fetch_optional(IVOOX_PODCAST_URL, decode=True)
+
     for epnum, title, spotify_url, pubdate in new_ones:
         print(f"\n#{epnum}: {title}")
         series_name, review, reason = classify(title)
 
-        apple_url = get_apple_url(epnum)
-        ivoox_url = get_ivoox_url(epnum)
-        yt_url = get_youtube_url(epnum)
+        apple_url = get_apple_url(epnum, itunes_raw)
+        ivoox_url = get_ivoox_url(epnum, ivoox_html)
+        yt_url = get_youtube_url(epnum, youtube_raw)
         print(f"  Spotify: {spotify_url}")
         print(f"  Apple:   {apple_url or '(no encontrado todavía)'}")
         print(f"  iVoox:   {ivoox_url or '(no encontrado todavía)'}")

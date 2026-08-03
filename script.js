@@ -45,7 +45,7 @@ function platformLinkHTML(url, icon, label) {
 function episodeItemHTML(ep) {
   return `
     <li class="episode-card">
-      <img class="episode-cover" src="${escapeHtml(youtubeThumbnail(ep.ytUrl))}" alt="" loading="lazy">
+      <img class="episode-cover" src="${escapeHtml(youtubeThumbnail(ep.ytUrl))}" alt="" loading="lazy" onerror="this.onerror=null;this.src='assets/spotify-cover-hq.jpg';">
       <div class="episode-card-body">
         <p class="episode-title">${escapeHtml(ep.title)}</p>
         <span class="episode-links">
@@ -111,6 +111,14 @@ function mapPopupEpisodeHTML(ep) {
   `;
 }
 
+// aria-expanded viaja siempre junto a la clase "is-open": son el mismo
+// estado, uno visual y otro para lectores de pantalla (el botón revela
+// contenido extra, como cualquier patrón de disclosure).
+function closeMapPin(pin) {
+  pin.classList.remove('is-open');
+  pin.setAttribute('aria-expanded', 'false');
+}
+
 function renderMap() {
   const container = document.querySelector('.world-map');
   if (!container || typeof MAP_LOCATIONS === 'undefined') return;
@@ -119,7 +127,7 @@ function renderMap() {
     const align = loc.xPct < 15 ? 'align-left' : loc.xPct > 85 ? 'align-right' : 'align-center';
     const side = loc.yPct < 45 ? 'side-below' : 'side-above';
     return `
-      <button type="button" class="map-pin ${align} ${side}" style="left:${loc.xPct}%; top:${loc.yPct}%;" aria-label="${escapeHtml(loc.name)}: ${loc.episodes.length} episodio(s)">
+      <button type="button" class="map-pin ${align} ${side}" style="left:${loc.xPct}%; top:${loc.yPct}%;" aria-label="${escapeHtml(loc.name)}: ${loc.episodes.length} episodio(s)" aria-expanded="false">
         <span class="map-pin-dot"></span>
         <span class="map-popup">
           <span class="map-popup-title">${escapeHtml(loc.name)}</span>
@@ -137,8 +145,11 @@ function renderMap() {
     pin.addEventListener('click', (e) => {
       e.stopPropagation();
       const isOpen = pin.classList.contains('is-open');
-      container.querySelectorAll('.map-pin.is-open').forEach((p) => p.classList.remove('is-open'));
-      if (!isOpen) pin.classList.add('is-open');
+      container.querySelectorAll('.map-pin.is-open').forEach(closeMapPin);
+      if (!isOpen) {
+        pin.classList.add('is-open');
+        pin.setAttribute('aria-expanded', 'true');
+      }
     });
   });
 }
@@ -148,7 +159,7 @@ function renderMap() {
 // dentro de renderMap(), cada llamada apilaría un listener de document más.
 function initMapOutsideClick() {
   document.addEventListener('click', () => {
-    document.querySelectorAll('.map-pin.is-open').forEach((p) => p.classList.remove('is-open'));
+    document.querySelectorAll('.map-pin.is-open').forEach(closeMapPin);
   });
 }
 

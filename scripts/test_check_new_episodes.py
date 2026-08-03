@@ -280,9 +280,14 @@ class SeriesDataMutationTests(unittest.TestCase):
 
 
 class NetworkParsingTests(unittest.TestCase):
-    """get_spotify_episodes / get_apple_url / get_youtube_url.
+    """get_spotify_episodes / get_apple_url / get_youtube_url / get_ivoox_url.
 
-    fetch() siempre mockeado: cero peticiones de red reales en los tests.
+    get_apple_url/get_youtube_url/get_ivoox_url ya NO llaman a fetch() por
+    su cuenta (ver fetch_optional y main): reciben el contenido ya
+    descargado como argumento, así que estos tests lo pasan directamente
+    desde los fixtures, sin mockear nada. Sí se mockea fetch() para
+    get_spotify_episodes (esa sigue llamando a fetch() ella misma) y para
+    fetch_optional en su propia clase de tests, más abajo.
     """
 
     @patch("check_new_episodes.fetch", side_effect=fake_fetch)
@@ -294,59 +299,57 @@ class NetworkParsingTests(unittest.TestCase):
         self.assertIn("LA MAFIA SUIZA", title)
         self.assertTrue(link.startswith("https://"))
 
-    @patch("check_new_episodes.fetch", side_effect=fake_fetch)
-    def test_get_apple_url_encuentra_el_episodio_por_numero(self, _mock):
-        url = cne.get_apple_url(105)
+    def test_get_apple_url_encuentra_el_episodio_por_numero(self):
+        url = cne.get_apple_url(105, ITUNES_FIXTURE.encode("utf-8"))
         self.assertIn("/es/podcast/", url)   # normalizado desde /us/
         self.assertNotIn("&uo=", url)        # tracking param quitado
 
-    @patch("check_new_episodes.fetch", side_effect=fake_fetch)
-    def test_get_apple_url_episodio_no_encontrado_devuelve_vacio(self, _mock):
-        self.assertEqual(cne.get_apple_url(999999), "")
+    def test_get_apple_url_episodio_no_encontrado_devuelve_vacio(self):
+        self.assertEqual(cne.get_apple_url(999999, ITUNES_FIXTURE.encode("utf-8")), "")
 
-    @patch("check_new_episodes.fetch", side_effect=lambda url: (_ for _ in ()).throw(TimeoutError("boom")))
-    def test_get_apple_url_no_propaga_excepciones_de_red(self, _mock):
-        # una caída de iTunes no debe tumbar el script: solo ese enlace
-        # queda vacío, se completa a mano después (ver README)
-        self.assertEqual(cne.get_apple_url(105), "")
+    def test_get_apple_url_sin_datos_devuelve_vacio(self):
+        # itunes_raw=None: así es como fetch_optional marca que la
+        # descarga falló (ver FetchOptionalTests). No debe tumbar el script.
+        self.assertEqual(cne.get_apple_url(105, None), "")
 
-    @patch("check_new_episodes.fetch", side_effect=fake_fetch)
-    def test_get_youtube_url_encuentra_el_video_por_numero(self, _mock):
-        url = cne.get_youtube_url(105)
+    def test_get_apple_url_json_corrupto_devuelve_vacio(self):
+        # una respuesta a medias (corte de red, error 5xx con cuerpo HTML...)
+        # no debe tumbar el script: mismo criterio que sin datos.
+        self.assertEqual(cne.get_apple_url(105, b"{esto no es json"), "")
+
+    def test_get_youtube_url_encuentra_el_video_por_numero(self):
+        url = cne.get_youtube_url(105, YOUTUBE_FIXTURE.encode("utf-8"))
         self.assertEqual(url, "https://www.youtube.com/watch?v=videoId105")
 
-    @patch("check_new_episodes.fetch", side_effect=fake_fetch)
-    def test_get_youtube_url_no_encontrado_devuelve_vacio(self, _mock):
-        self.assertEqual(cne.get_youtube_url(999999), "")
+    def test_get_youtube_url_no_encontrado_devuelve_vacio(self):
+        self.assertEqual(cne.get_youtube_url(999999, YOUTUBE_FIXTURE.encode("utf-8")), "")
 
-    @patch("check_new_episodes.fetch", side_effect=lambda url: (_ for _ in ()).throw(TimeoutError("boom")))
-    def test_get_youtube_url_no_propaga_excepciones_de_red(self, _mock):
-        self.assertEqual(cne.get_youtube_url(105), "")
+    def test_get_youtube_url_sin_datos_devuelve_vacio(self):
+        self.assertEqual(cne.get_youtube_url(105, None), "")
 
-    @patch("check_new_episodes.fetch", side_effect=fake_fetch)
-    def test_get_ivoox_url_encuentra_el_episodio_por_numero(self, _mock):
-        url = cne.get_ivoox_url(105)
+    def test_get_youtube_url_xml_corrupto_devuelve_vacio(self):
+        self.assertEqual(cne.get_youtube_url(105, b"<feed>sin cerrar"), "")
+
+    def test_get_ivoox_url_encuentra_el_episodio_por_numero(self):
+        url = cne.get_ivoox_url(105, IVOOX_FIXTURE)
         self.assertEqual(
             url,
             "https://www.ivoox.com/black-mango-105-la-mafia-suiza-audios-mp3_rf_178000105_1.html",
         )
 
-    @patch("check_new_episodes.fetch", side_effect=fake_fetch)
-    def test_get_ivoox_url_no_confunde_105_con_1050(self, _mock):
+    def test_get_ivoox_url_no_confunde_105_con_1050(self):
         # sin el guion exigido justo tras el número, "105" habría casado
         # por error dentro del "black-mango-1050-..." de la trampa del fixture
-        url = cne.get_ivoox_url(105)
+        url = cne.get_ivoox_url(105, IVOOX_FIXTURE)
         self.assertNotIn("1050", url)
 
-    @patch("check_new_episodes.fetch", side_effect=fake_fetch)
-    def test_get_ivoox_url_episodio_no_encontrado_devuelve_vacio(self, _mock):
-        self.assertEqual(cne.get_ivoox_url(999999), "")
+    def test_get_ivoox_url_episodio_no_encontrado_devuelve_vacio(self):
+        self.assertEqual(cne.get_ivoox_url(999999, IVOOX_FIXTURE), "")
 
-    @patch("check_new_episodes.fetch", side_effect=lambda url: (_ for _ in ()).throw(TimeoutError("boom")))
-    def test_get_ivoox_url_no_propaga_excepciones_de_red(self, _mock):
-        # igual que Apple/YouTube: si ivoox.com falla, el campo queda vacío
-        # y se completa a mano, no se cae todo el script
-        self.assertEqual(cne.get_ivoox_url(105), "")
+    def test_get_ivoox_url_sin_datos_devuelve_vacio(self):
+        # igual que Apple/YouTube: si ivoox.com falló al descargarse, el
+        # campo queda vacío y se completa a mano, no se cae todo el script
+        self.assertEqual(cne.get_ivoox_url(105, None), "")
 
     def test_fetch_manda_user_agent_y_devuelve_bytes(self):
         # el único test que baja hasta fetch() en sí (todo lo demás mockea
@@ -368,6 +371,28 @@ class NetworkParsingTests(unittest.TestCase):
         self.assertEqual(resultado, b"contenido de prueba")
         peticion = mock_urlopen.call_args.args[0]
         self.assertEqual(peticion.get_header("User-agent"), cne.UA)
+
+
+class FetchOptionalTests(unittest.TestCase):
+    """fetch_optional(): la pieza que evita repetir la misma descarga por
+    cada episodio nuevo del lote (ver comentario en main() y el hallazgo de
+    la revisión de rendimiento: get_apple_url/get_youtube_url/get_ivoox_url
+    piden siempre la MISMA url sin importar el episodio)."""
+
+    @patch("check_new_episodes.fetch", side_effect=fake_fetch)
+    def test_devuelve_bytes_crudos_por_defecto(self, _mock):
+        resultado = cne.fetch_optional("https://itunes.apple.com/lookup?id=x")
+        self.assertIsInstance(resultado, bytes)
+
+    @patch("check_new_episodes.fetch", side_effect=fake_fetch)
+    def test_decode_true_devuelve_str(self, _mock):
+        resultado = cne.fetch_optional("https://www.ivoox.com/podcast-x", decode=True)
+        self.assertIsInstance(resultado, str)
+        self.assertIn("black-mango", resultado)
+
+    @patch("check_new_episodes.fetch", side_effect=lambda url: (_ for _ in ()).throw(TimeoutError("boom")))
+    def test_fallo_de_red_devuelve_none_en_vez_de_propagar(self, _mock):
+        self.assertIsNone(cne.fetch_optional("https://ejemplo.test/x"))
 
 
 class UpdateEpisodeCountNoteTests(unittest.TestCase):
@@ -567,6 +592,36 @@ class MainOrchestrationTests(unittest.TestCase):
                                     nuevo_texto.index('] },', nuevo_texto.index('name: "La Mafia"'))]
         self.assertIn("#105", bloque_mafia)
         self.assertIn("#106", bloque_mafia)
+
+    def test_cada_fuente_se_descarga_una_sola_vez_aunque_haya_varios_episodios_nuevos(self):
+        # el hallazgo de la revisión de rendimiento: Apple/YouTube/iVoox
+        # devuelven siempre su listado completo más reciente sin importar
+        # qué episodio se busque, así que con 2 episodios nuevos en el
+        # mismo lote antes se pedían 2 veces cada una — ahora debe ser 1.
+        rss_dos_de_mafia = RSS_FIXTURE.replace(
+            "Sin numero de episodio, se debe ignorar",
+            "Black Mango #106 - LA MAFIA HOLANDESA | segundo caso de prueba",
+        ).replace("guid-nan", "guid-106")
+
+        llamadas = []
+
+        def fetch_contador(url):
+            llamadas.append(url)
+            if "anchor.fm" in url:
+                return rss_dos_de_mafia.encode("utf-8")
+            return fake_fetch(url)
+
+        with patch("check_new_episodes.fetch", side_effect=fetch_contador), \
+             patch.object(sys, "argv", ["check_new_episodes.py"]):
+            (code,), _ = silent(lambda: (cne.main(),))
+
+        def veces(substr):
+            return sum(1 for u in llamadas if substr in u)
+
+        self.assertEqual(veces("itunes.apple.com"), 1)
+        self.assertEqual(veces("youtube.com/feeds"), 1)
+        self.assertEqual(veces("ivoox.com"), 1)
+        self.assertEqual(veces("anchor.fm"), 1)
 
 
 if __name__ == "__main__":
