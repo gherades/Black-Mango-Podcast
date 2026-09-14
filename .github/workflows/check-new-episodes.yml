@@ -59,16 +59,23 @@ jobs:
         run: |
           route=$(python3 -c "import json,os; print(json.loads(os.environ['SUMMARY_JSON']).get('route','none'))")
           added=$(python3 -c "import json,os; print(len(json.loads(os.environ['SUMMARY_JSON']).get('added',[])))")
+          added_docs=$(python3 -c "import json,os; print(len(json.loads(os.environ['SUMMARY_JSON']).get('added_docs',[])))")
           echo "route=$route" >> "$GITHUB_OUTPUT"
           echo "added=$added" >> "$GITHUB_OUTPUT"
+          echo "added_docs=$added_docs" >> "$GITHUB_OUTPUT"
 
       - name: Publicar directo a main (casos claros)
         if: steps.route.outputs.route == 'main'
         env:
           ADDED_COUNT: ${{ steps.route.outputs.added }}
+          ADDED_DOCS_COUNT: ${{ steps.route.outputs.added_docs }}
         run: |
+          msg="Añadir ${ADDED_COUNT} episodio(s) nuevo(s)"
+          if [ "$ADDED_DOCS_COUNT" != "0" ]; then
+            msg="$msg y ${ADDED_DOCS_COUNT} documental(es) nuevo(s)"
+          fi
           git add -A
-          git commit -m "Añadir ${ADDED_COUNT} episodio(s) nuevo(s) (automático)"
+          git commit -m "$msg (automático)"
           git push origin main
 
       - name: Abrir Pull Request (hay algo que revisar)

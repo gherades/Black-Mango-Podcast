@@ -25,6 +25,13 @@ un comentario "// NECESITA REVISIÓN: ...", y todo el lote de ese run se
 manda por Pull Request en vez de directo a main (campo "route" en el
 resumen JSON de la salida) — así el PR tiene un cambio real que revisar.
 
+Aparte de los episodios numerados, cada run también comprueba la playlist de
+YouTube "Documentales" del canal: cualquier vídeo de esa playlist que no esté
+ya en DOCUMENTALES se añade tal cual (sin clasificar por serie ni pedir
+revisión — pertenecer a esa playlist ya es la curación). Como el podcast no
+publica todas las semanas por igual (algunas semanas hay documental en vez
+de episodio), esto se comprueba siempre, aunque no haya episodios nuevos.
+
 Uso:
   python3 scripts/check_new_episodes.py            # aplica los cambios
   python3 scripts/check_new_episodes.py --dry-run  # solo informa, no toca nada
@@ -53,6 +60,7 @@ INDEX_HTML = ROOT / "index.html"
 SPOTIFY_RSS = "https://anchor.fm/s/e0c735b8/podcast/rss"
 APPLE_SHOW_ID = "1726276206"
 YOUTUBE_CHANNEL_ID = "UCL1ITQtr7ogwPN-5w96kG7Q"
+YOUTUBE_DOCS_PLAYLIST_ID = "PLGR6l-llOTj52NWifz_9red7xPk-56WDf"
 IVOOX_PODCAST_URL = "https://www.ivoox.com/podcast-black-mango-podcast_sq_f12370133_1.html"
 
 UA = "Mozilla/5.0 (compatible; BlackMangoEpisodeChecker/1.0)"
@@ -168,6 +176,27 @@ def get_youtube_url(epnum, youtube_raw):
     return ""
 
 
+def get_youtube_playlist_videos(playlist_raw):
+    """Devuelve [(video_id, title)] desde el feed Atom de la playlist de
+    documentales, en el mismo orden en que los da el feed (más recientes
+    primero, igual que el feed del canal de get_youtube_url)."""
+    if playlist_raw is None:
+        return []
+    ns = {"yt": "http://www.youtube.com/xml/schemas/2015",
+          "atom": "http://www.w3.org/2005/Atom"}
+    try:
+        root = ET.fromstring(playlist_raw)
+    except Exception:
+        return []
+    out = []
+    for entry in root.findall("atom:entry", ns):
+        title = (entry.findtext("atom:title", default="", namespaces=ns) or "").strip()
+        vid = entry.findtext("yt:videoId", default="", namespaces=ns)
+        if vid and title:
+            out.append((vid, title))
+    return out
+
+
 def get_ivoox_url(epnum, ivoox_html):
     # ivoox_html: la página 1 de ivoox.com, descargada una sola vez para
     # todo el lote en main() — mismo motivo que Apple/YouTube arriba.
@@ -183,6 +212,23 @@ def get_ivoox_url(epnum, ivoox_html):
 
 def existing_epnums(series_js_text):
     return {int(n) for n in re.findall(r"epnum:\s*(\d+)", series_js_text)}
+
+
+def existing_doc_video_ids(series_js_text):
+    """IDs de vídeo ya presentes en DOCUMENTALES.
+
+    Se limita a ese bloque (no a todo el archivo): los episodios numerados
+    también tienen ytUrl con el mismo formato "watch?v=...", así que buscar
+    en el texto completo confundiría un vídeo de un episodio con uno de la
+    playlist de documentales.
+    """
+    marker = "const DOCUMENTALES = ["
+    pos = series_js_text.find(marker)
+    if pos == -1:
+        return set()
+    end = series_js_text.find("\n];", pos)
+    block = series_js_text[pos:end] if end != -1 else series_js_text[pos:]
+    return set(re.findall(r"watch\?v=([\w-]+)", block))
 
 
 def series_names_in_data(series_js_text):
@@ -247,6 +293,26 @@ def js_episode_entry(epnum, title, spotify_url, apple_url, ivoox_url, yt_url, in
     parts = [f'epnum: {epnum}', f'title: {js_string(title)}', f'url: {js_string(spotify_url)}',
               f'appleUrl: {js_string(apple_url)}', f'ivooxUrl: {js_string(ivoox_url)}', f'ytUrl: {js_string(yt_url)}']
     return indent + "{ " + ", ".join(parts) + " },"
+
+
+def js_doc_entry(title, yt_url, indent="  "):
+    parts = [f'title: {js_string(title)}', f'ytUrl: {js_string(yt_url)}']
+    return indent + "{ " + ", ".join(parts) + " },"
+
+
+def insert_into_documentales(series_js_text, entry_line):
+    # a diferencia de insert_into_standalone (antepone), aquí se añade al
+    # FINAL: los documentales ya existentes en el archivo están en orden
+    # cronológico ascendente (el más antiguo primero), y se mantiene ese
+    # mismo orden.
+    marker = "const DOCUMENTALES = ["
+    pos = series_js_text.find(marker)
+    if pos == -1:
+        raise RuntimeError(f"no se encontró '{marker}' en series-data.js")
+    close_pos = series_js_text.find("\n];", pos)
+    if close_pos == -1:
+        raise RuntimeError("no se encontró el cierre de DOCUMENTALES en series-data.js")
+    return series_js_text[:close_pos] + "\n" + entry_line + series_js_text[close_pos:]
 
 
 def insert_into_standalone(series_js_text, entry_line, comment=None):
@@ -318,27 +384,52 @@ def main():
         (ep for ep in feed_episodes if ep[0] not in known),
         key=lambda e: e[0],
     )
-    if not new_ones:
-        print("No hay episodios nuevos. Nada que hacer.")
+
+    print(f"\nConsultando la playlist de documentales de YouTube (id {YOUTUBE_DOCS_PLAYLIST_ID})...")
+    docs_raw = fetch_optional(
+        f"https://www.youtube.com/feeds/videos.xml?playlist_id={YOUTUBE_DOCS_PLAYLIST_ID}"
+    )
+    docs_feed = get_youtube_playlist_videos(docs_raw)
+    known_doc_ids = existing_doc_video_ids(series_js_text)
+    new_docs = [(vid, title) for vid, title in docs_feed if vid not in known_doc_ids]
+    new_docs.reverse()  # el feed trae los más recientes primero; se insertan en orden cronológico
+    print(f"  {len(docs_feed)} vídeos en la playlist, {len(new_docs)} nuevo(s)")
+
+    if not new_ones and not new_docs:
+        print("\nNo hay episodios ni documentales nuevos. Nada que hacer.")
         print("\n=== RESUMEN JSON ===")
-        print(json.dumps({"added": [], "needs_review": [], "route": "none"}, ensure_ascii=False))
+        print(json.dumps(
+            {"added": [], "added_docs": [], "needs_review": [], "route": "none"}, ensure_ascii=False
+        ))
         return 0
 
     added = []
+    added_docs = []
     needs_review = []
+
+    for vid, title in new_docs:
+        print(f"\nDocumental nuevo: {title}")
+        yt_url = f"https://www.youtube.com/watch?v={vid}"
+        entry_line = js_doc_entry(title, yt_url)
+        series_js_text = insert_into_documentales(series_js_text, entry_line)
+        added_docs.append({"videoId": vid, "title": title})
 
     # Una sola descarga de cada fuente para TODO el lote: ni Apple, ni
     # YouTube ni iVoox dependen de qué episodio se busque (siempre devuelven
     # su listado completo más reciente), así que pedirlas dentro del bucle
     # de abajo — una vez por episodio — repetiría la misma descarga sin
-    # necesidad si el lote trae más de un episodio nuevo.
-    itunes_raw = fetch_optional(
-        f"https://itunes.apple.com/lookup?id={APPLE_SHOW_ID}&entity=podcastEpisode&limit=200"
-    )
-    youtube_raw = fetch_optional(
-        f"https://www.youtube.com/feeds/videos.xml?channel_id={YOUTUBE_CHANNEL_ID}"
-    )
-    ivoox_html = fetch_optional(IVOOX_PODCAST_URL, decode=True)
+    # necesidad si el lote trae más de un episodio nuevo. Si no hay
+    # episodios nuevos (solo documentales), ni siquiera hace falta pedirlas.
+    if new_ones:
+        itunes_raw = fetch_optional(
+            f"https://itunes.apple.com/lookup?id={APPLE_SHOW_ID}&entity=podcastEpisode&limit=200"
+        )
+        youtube_raw = fetch_optional(
+            f"https://www.youtube.com/feeds/videos.xml?channel_id={YOUTUBE_CHANNEL_ID}"
+        )
+        ivoox_html = fetch_optional(IVOOX_PODCAST_URL, decode=True)
+    else:
+        itunes_raw = youtube_raw = ivoox_html = None
 
     for epnum, title, spotify_url, pubdate in new_ones:
         print(f"\n#{epnum}: {title}")
@@ -381,14 +472,17 @@ def main():
         print("\n--dry-run: no se ha escrito ni comprometido nada.")
     else:
         SERIES_DATA.write_text(series_js_text, encoding="utf-8")
-        print(f"\nEscrito {SERIES_DATA} con {len(added)} episodio(s) nuevo(s).")
+        print(f"\nEscrito {SERIES_DATA} con {len(added)} episodio(s) y {len(added_docs)} documental(es) nuevo(s).")
         update_episode_count_note(series_js_text)
 
     # resumen máquina-legible para el workflow de GitHub Actions: si algo
     # necesitó revisión, el lote entero de este run se manda por PR en vez
-    # de ir directo a main (ver .github/workflows/check-new-episodes.yml)
+    # de ir directo a main (ver .github/workflows/check-new-episodes.yml).
+    # Los documentales nunca piden revisión: pertenecer a la playlist ya es
+    # la curación, así que siempre pueden ir directos a main.
     summary = {
         "added": [{"epnum": e, "title": t, "series": s} for e, t, s in added],
+        "added_docs": added_docs,
         "needs_review": [{"epnum": e, "title": t, "reason": r} for e, t, r in needs_review],
         "route": "pull_request" if needs_review else "main",
     }

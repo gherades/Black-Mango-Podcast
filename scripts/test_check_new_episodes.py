@@ -86,6 +86,19 @@ IVOOX_FIXTURE = """<html><body>
 <a href="/black-mango-1050-episodio-trampa-audios-mp3_rf_999999_1.html">trampa numérica</a>
 </body></html>"""
 
+# Mismos vídeos que ya trae FROZEN_SERIES_DATA en DOCUMENTALES (ver ese
+# archivo): por defecto no hay ningún documental "nuevo" que detectar, para
+# no afectar a los tests que no hablan de documentales. Los tests que sí
+# quieren un documental nuevo parten de esta constante y le añaden una
+# <entry> más.
+DOCS_PLAYLIST_FIXTURE = """<?xml version="1.0"?>
+<feed xmlns="http://www.w3.org/2005/Atom" xmlns:yt="http://www.youtube.com/xml/schemas/2015">
+<entry><title>ESTO ES CUBA - La TERRIBLE realidad de un país atrapado en el TIEMPO</title>
+<yt:videoId>xlkujZbJECE</yt:videoId></entry>
+<entry><title>ENTRAMOS en el INTERIOR de un VOLCÁN - Un día TRABAJANDO en el INFIERNO</title>
+<yt:videoId>1WL7xcqN4rQ</yt:videoId></entry>
+</feed>"""
+
 
 def fake_fetch(url):
     """side_effect de fetch(): responde según qué endpoint se pida."""
@@ -93,6 +106,8 @@ def fake_fetch(url):
         return RSS_FIXTURE.encode("utf-8")
     if "itunes.apple.com" in url:
         return ITUNES_FIXTURE.encode("utf-8")
+    if "playlist_id=" in url:
+        return DOCS_PLAYLIST_FIXTURE.encode("utf-8")
     if "youtube.com/feeds" in url:
         return YOUTUBE_FIXTURE.encode("utf-8")
     if "ivoox.com" in url:
@@ -274,6 +289,46 @@ class SeriesDataMutationTests(unittest.TestCase):
         self.assertEqual(len(nombres), 14)
         self.assertIn("La Mafia", nombres)
 
+    def test_existing_doc_video_ids_incluye_los_documentales_conocidos(self):
+        ids = cne.existing_doc_video_ids(self.real_text)
+        # "ESTO ES CUBA" es el primero de DOCUMENTALES; como los nuevos se
+        # añaden al final (ver insert_into_documentales), este siempre debe
+        # seguir estando, crezca lo que crezca la lista en el futuro.
+        self.assertIn("xlkujZbJECE", ids)
+
+    def test_existing_doc_video_ids_no_confunde_con_videos_de_episodios(self):
+        # un ytUrl de un episodio normal (fuera de DOCUMENTALES) no debe
+        # colarse: solo cuentan los vídeos que ya están en esa lista.
+        simulado = (
+            'const STANDALONE_EPISODES = [\n'
+            '  { epnum: 1, title: "x", url: "", appleUrl: "", ivooxUrl: "", '
+            'ytUrl: "https://www.youtube.com/watch?v=EPISODIO123" },\n'
+            '];\n'
+            'const DOCUMENTALES = [\n'
+            '  { title: "y", ytUrl: "https://www.youtube.com/watch?v=DOC456" },\n'
+            '];\n'
+        )
+        ids = cne.existing_doc_video_ids(simulado)
+        self.assertEqual(ids, {"DOC456"})
+
+    def test_js_doc_entry_genera_un_objeto_js_bien_formado(self):
+        entry = cne.js_doc_entry('Título "raro"', "https://www.youtube.com/watch?v=X")
+        self.assertTrue(entry.strip().startswith('{ title:'))
+        self.assertTrue(entry.rstrip().endswith('},'))
+        self.assertIn('ytUrl: "https://www.youtube.com/watch?v=X"', entry)
+
+    def test_insert_into_documentales_anade_al_final_no_al_principio(self):
+        entry = cne.js_doc_entry("Nuevo documental", "https://www.youtube.com/watch?v=NUEVO")
+        result = cne.insert_into_documentales(self.real_text, entry)
+        marker = "const DOCUMENTALES = ["
+        bloque = result[result.index(marker):result.index("\n];", result.index(marker))]
+        self.assertTrue(bloque.rstrip().endswith('watch?v=NUEVO" },'))
+
+    def test_insert_into_documentales_falla_con_mensaje_claro_si_falta_el_marcador(self):
+        with self.assertRaises(RuntimeError) as ctx:
+            cne.insert_into_documentales("sin ningún marcador aquí", "x")
+        self.assertIn("DOCUMENTALES", str(ctx.exception))
+
     def test_warn_uncovered_series_no_avisa_con_los_datos_reales(self):
         # si esto falla, alguien añadió una serie a mano sin su keyword
         sin_cubrir, _ = silent(cne.warn_uncovered_series, self.real_text)
@@ -358,6 +413,19 @@ class NetworkParsingTests(unittest.TestCase):
         # igual que Apple/YouTube: si ivoox.com falló al descargarse, el
         # campo queda vacío y se completa a mano, no se cae todo el script
         self.assertEqual(cne.get_ivoox_url(105, None), "")
+
+    def test_get_youtube_playlist_videos_extrae_id_y_titulo_en_orden_del_feed(self):
+        videos = cne.get_youtube_playlist_videos(DOCS_PLAYLIST_FIXTURE.encode("utf-8"))
+        self.assertEqual(videos, [
+            ("xlkujZbJECE", "ESTO ES CUBA - La TERRIBLE realidad de un país atrapado en el TIEMPO"),
+            ("1WL7xcqN4rQ", "ENTRAMOS en el INTERIOR de un VOLCÁN - Un día TRABAJANDO en el INFIERNO"),
+        ])
+
+    def test_get_youtube_playlist_videos_sin_datos_devuelve_lista_vacia(self):
+        self.assertEqual(cne.get_youtube_playlist_videos(None), [])
+
+    def test_get_youtube_playlist_videos_xml_corrupto_devuelve_lista_vacia(self):
+        self.assertEqual(cne.get_youtube_playlist_videos(b"<feed>sin cerrar"), [])
 
     def test_fetch_manda_user_agent_y_devuelve_bytes(self):
         # el único test que baja hasta fetch() en sí (todo lo demás mockea
@@ -602,6 +670,77 @@ class MainOrchestrationTests(unittest.TestCase):
         self.assertIn("#105", bloque_mafia)
         self.assertIn("#106", bloque_mafia)
 
+    def test_documental_nuevo_en_la_playlist_se_anade_directo_a_main(self):
+        playlist_con_novedad = DOCS_PLAYLIST_FIXTURE.replace(
+            "</feed>",
+            '<entry><title>Nadamos con ORCAS para descubrir si son tan peligrosas</title>'
+            '<yt:videoId>NUEVOID</yt:videoId></entry></feed>',
+        )
+
+        def fetch_con_doc_nuevo(url):
+            if "playlist_id=" in url:
+                return playlist_con_novedad.encode("utf-8")
+            return fake_fetch(url)
+
+        with patch("check_new_episodes.fetch", side_effect=fetch_con_doc_nuevo), \
+             patch.object(sys, "argv", ["check_new_episodes.py"]):
+            (code,), salida = silent(lambda: (cne.main(),))
+
+        resumen = json.loads(salida.rsplit("=== RESUMEN JSON ===", 1)[1].strip())
+        self.assertEqual(resumen["route"], "main")
+        self.assertEqual(resumen["added_docs"], [{
+            "videoId": "NUEVOID",
+            "title": "Nadamos con ORCAS para descubrir si son tan peligrosas",
+        }])
+        # el #105 del fixture normal de RSS también se cuela en el mismo run
+        self.assertEqual([e["epnum"] for e in resumen["added"]], [105])
+
+        nuevo_texto = self.series_data.read_text(encoding="utf-8")
+        marker = "const DOCUMENTALES = ["
+        bloque = nuevo_texto[nuevo_texto.index(marker):nuevo_texto.index("\n];", nuevo_texto.index(marker))]
+        self.assertTrue(bloque.rstrip().endswith('watch?v=NUEVOID" },'))  # al final, no al principio
+
+    def test_documental_nuevo_sin_episodios_nuevos_igual_va_directo_a_main(self):
+        # el caso que motivó esto: algunas semanas el podcast no saca
+        # episodio numerado sino un documental — no debe hacer falta que
+        # haya también un episodio nuevo para que se detecte y se publique.
+        rss_sin_novedades = RSS_FIXTURE.replace("#105", "#104-bis").replace("guid-105", "guid-105b")
+        playlist_con_novedad = DOCS_PLAYLIST_FIXTURE.replace(
+            "</feed>",
+            '<entry><title>Documental suelto</title><yt:videoId>SOLOID</yt:videoId></entry></feed>',
+        )
+
+        def fetch_solo_doc(url):
+            if "anchor.fm" in url:
+                return rss_sin_novedades.encode("utf-8")
+            if "playlist_id=" in url:
+                return playlist_con_novedad.encode("utf-8")
+            return fake_fetch(url)
+
+        with patch("check_new_episodes.fetch", side_effect=fetch_solo_doc), \
+             patch.object(sys, "argv", ["check_new_episodes.py"]):
+            (code,), salida = silent(lambda: (cne.main(),))
+
+        resumen = json.loads(salida.rsplit("=== RESUMEN JSON ===", 1)[1].strip())
+        self.assertEqual(resumen["added"], [])
+        self.assertEqual(resumen["route"], "main")
+        self.assertEqual(resumen["added_docs"], [{"videoId": "SOLOID", "title": "Documental suelto"}])
+
+    def test_sin_documentales_nuevos_no_toca_documentales(self):
+        original = self.series_data.read_text(encoding="utf-8")
+        marker = "const DOCUMENTALES = ["
+        bloque_original = original[original.index(marker):original.index("\n];", original.index(marker))]
+
+        # RSS con un episodio nuevo de verdad, pero la playlist de
+        # documentales no trae nada que no estuviera ya (DOCS_PLAYLIST_FIXTURE)
+        code, salida = self._run_main()
+        resumen = json.loads(salida.rsplit("=== RESUMEN JSON ===", 1)[1].strip())
+        self.assertEqual(resumen["added_docs"], [])
+
+        nuevo_texto = self.series_data.read_text(encoding="utf-8")
+        bloque_nuevo = nuevo_texto[nuevo_texto.index(marker):nuevo_texto.index("\n];", nuevo_texto.index(marker))]
+        self.assertEqual(bloque_nuevo, bloque_original)
+
     def test_cada_fuente_se_descarga_una_sola_vez_aunque_haya_varios_episodios_nuevos(self):
         # el hallazgo de la revisión de rendimiento: Apple/YouTube/iVoox
         # devuelven siempre su listado completo más reciente sin importar
@@ -628,7 +767,8 @@ class MainOrchestrationTests(unittest.TestCase):
             return sum(1 for u in llamadas if substr in u)
 
         self.assertEqual(veces("itunes.apple.com"), 1)
-        self.assertEqual(veces("youtube.com/feeds"), 1)
+        self.assertEqual(veces("channel_id="), 1)  # feed del canal, para resolver ytUrl de episodios
+        self.assertEqual(veces("playlist_id="), 1)  # feed de la playlist de documentales
         self.assertEqual(veces("ivoox.com"), 1)
         self.assertEqual(veces("anchor.fm"), 1)
 
