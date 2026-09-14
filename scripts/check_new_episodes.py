@@ -40,6 +40,7 @@ import json
 import re
 import ssl
 import sys
+import time
 import urllib.request
 import xml.etree.ElementTree as ET
 from pathlib import Path
@@ -56,6 +57,13 @@ except ImportError:
 ROOT = Path(__file__).resolve().parent.parent
 SERIES_DATA = ROOT / "assets" / "series-data.js"
 INDEX_HTML = ROOT / "index.html"
+
+# <script src> locales de index.html a los que se les añade "?v=<timestamp>"
+# en cada run que escribe cambios (ver bump_cache_version): sin esto, el
+# navegador puede seguir sirviendo una copia en caché de series-data.js
+# (Cache-Control: max-age=600 en GitHub Pages) incluso después de recargar
+# la página, así que un cambio recién publicado tarda en verse.
+CACHE_BUSTED_ASSETS = ("assets/series-data.js", "assets/map-data.js", "script.js")
 
 SPOTIFY_RSS = "https://anchor.fm/s/e0c735b8/podcast/rss"
 APPLE_SHOW_ID = "1726276206"
@@ -345,6 +353,23 @@ def update_episode_count_note(series_js_text):
         )
 
 
+def bump_cache_version(html_text):
+    """Actualiza el "?v=<timestamp>" de los <script src> locales (ver
+    CACHE_BUSTED_ASSETS) para forzar a que el navegador pida la versión
+    nueva de esos archivos en vez de servir una copia en caché."""
+    version = str(int(time.time()))
+    pattern = re.compile(
+        r'src="(' + "|".join(re.escape(a) for a in CACHE_BUSTED_ASSETS) + r')(?:\?v=\d+)?"'
+    )
+    new_html, n = pattern.subn(lambda m: f'src="{m.group(1)}?v={version}"', html_text)
+    if n != len(CACHE_BUSTED_ASSETS):
+        print(
+            f"AVISO: se esperaba actualizar el cache-busting de {len(CACHE_BUSTED_ASSETS)} "
+            f"<script src> en index.html, se encontraron {n}."
+        )
+    return new_html
+
+
 def insert_into_series(series_js_text, series_name, entry_line):
     pattern = re.compile(
         r'(\{ name: "' + re.escape(series_name) + r'", episodes: \[)(.*?)(\n  \] \})',
@@ -474,6 +499,7 @@ def main():
         SERIES_DATA.write_text(series_js_text, encoding="utf-8")
         print(f"\nEscrito {SERIES_DATA} con {len(added)} episodio(s) y {len(added_docs)} documental(es) nuevo(s).")
         update_episode_count_note(series_js_text)
+        INDEX_HTML.write_text(bump_cache_version(INDEX_HTML.read_text(encoding="utf-8")), encoding="utf-8")
 
     # resumen máquina-legible para el workflow de GitHub Actions: si algo
     # necesitó revisión, el lote entero de este run se manda por PR en vez

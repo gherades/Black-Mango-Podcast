@@ -16,6 +16,7 @@ Cobertura (ver "coverage" más abajo para medirla de verdad):
 import contextlib
 import io
 import json
+import re
 import sys
 import unittest
 from pathlib import Path
@@ -512,6 +513,41 @@ class UpdateEpisodeCountNoteTests(unittest.TestCase):
         self.assertIn("AVISO", salida)
 
 
+class BumpCacheVersionTests(unittest.TestCase):
+    """bump_cache_version(): evita que el navegador siga sirviendo una
+    copia en caché de series-data.js/script.js/map-data.js tras un deploy
+    (bug real: un documental reordenado se seguía viendo en el orden viejo)."""
+
+    HTML_ORIGINAL = (
+        '<script src="assets/series-data.js"></script>\n'
+        '<script src="assets/map-data.js"></script>\n'
+        '<script src="script.js"></script>\n'
+    )
+
+    def test_anade_el_v_si_no_existia_todavia(self):
+        nuevo = cne.bump_cache_version(self.HTML_ORIGINAL)
+        for asset in cne.CACHE_BUSTED_ASSETS:
+            self.assertRegex(nuevo, rf'src="{re.escape(asset)}\?v=\d+"')
+
+    def test_cambia_el_v_si_ya_existia(self):
+        con_version_vieja = self.HTML_ORIGINAL.replace(
+            'series-data.js"', 'series-data.js?v=111"'
+        )
+        nuevo = cne.bump_cache_version(con_version_vieja)
+        self.assertNotIn("?v=111", nuevo)
+        self.assertRegex(nuevo, r'series-data\.js\?v=\d+"')
+
+    def test_los_tres_scripts_quedan_con_la_misma_version(self):
+        nuevo = cne.bump_cache_version(self.HTML_ORIGINAL)
+        versiones = set(re.findall(r"\?v=(\d+)", nuevo))
+        self.assertEqual(len(versiones), 1)
+
+    def test_avisa_si_falta_alguno_de_los_scripts(self):
+        html_incompleto = '<script src="assets/series-data.js"></script>\n'
+        _, salida = silent(cne.bump_cache_version, html_incompleto)
+        self.assertIn("AVISO", salida)
+
+
 class MainOrchestrationTests(unittest.TestCase):
     """main(): la pieza que nunca se había probado de punta a punta.
 
@@ -531,7 +567,11 @@ class MainOrchestrationTests(unittest.TestCase):
         shutil.copy(FROZEN_SERIES_DATA, self.series_data)
         self.index_html = Path(self.tmpdir.name) / "index.html"
         self.index_html.write_text(
-            "<p>103 episodios (5 de ellos solo disponibles en YouTube).</p>", encoding="utf-8"
+            "<p>103 episodios (5 de ellos solo disponibles en YouTube).</p>\n"
+            '<script src="assets/series-data.js"></script>\n'
+            '<script src="assets/map-data.js"></script>\n'
+            '<script src="script.js"></script>\n',
+            encoding="utf-8",
         )
 
         self._orig_series_data = cne.SERIES_DATA
@@ -598,10 +638,20 @@ class MainOrchestrationTests(unittest.TestCase):
 
     def test_dry_run_no_escribe_nada(self):
         original = self.series_data.read_text(encoding="utf-8")
+        original_index = self.index_html.read_text(encoding="utf-8")
         code, salida = self._run_main(argv_extra=["--dry-run"])
         self.assertEqual(code, 0)
         self.assertIn("--dry-run", salida)
         self.assertEqual(self.series_data.read_text(encoding="utf-8"), original)
+        self.assertEqual(self.index_html.read_text(encoding="utf-8"), original_index)
+
+    def test_al_escribir_cambios_se_actualiza_el_cache_busting_de_index_html(self):
+        # sin esto, el navegador puede seguir sirviendo una copia en caché
+        # de series-data.js aunque el deploy ya tenga el contenido nuevo.
+        code, _ = self._run_main()
+        nuevo_index = self.index_html.read_text(encoding="utf-8")
+        for asset in cne.CACHE_BUSTED_ASSETS:
+            self.assertRegex(nuevo_index, rf'src="{re.escape(asset)}\?v=\d+"')
 
     def test_sin_episodios_nuevos_no_toca_nada(self):
         # RSS que solo trae episodios que YA existen en los datos reales
