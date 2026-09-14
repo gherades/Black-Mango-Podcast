@@ -91,7 +91,8 @@ SERIES_KEYWORDS = [
     (r"experimentos m[eé]dicos", "Experimentos Médicos Terribles"),
     (r"fugas imposibles", "Fugas Imposibles"),
     (r"secta", "Las Peores Sectas de la Historia"),
-    (r"\bterrible", "Los Terribles"),
+    (r"secuestro", "Secuestros"),
+    (r"\bterrible", "Los Terribles"),  # catch-all genérico: va el último a propósito
 ]
 
 # Detecta "FRASE EN MAYÚSCULAS + número" (el patrón que usan los nombres de

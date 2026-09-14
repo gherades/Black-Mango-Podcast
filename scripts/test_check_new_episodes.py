@@ -140,6 +140,9 @@ class ClassifyTests(unittest.TestCase):
         ('Black Mango #78 - LA ANTIGUA CHINA | Conspiraciones', 'La Antigua Civilización'),
         ('Black Mango #97 - Los SECRETOS de DIOS | Las Historias más terribles', 'Religión'),
         ('Black Mango #43 - LAS PEORES SECTAS DE LA HISTORIA', 'Las Peores Sectas de la Historia'),
+        # "secuestro" tiene que ganar a "terrible" (igual que "mafia" en el
+        # test de abajo): el título real del #86 contiene ambas palabras.
+        ('Black Mango #86 – Los SECUESTROS más TERRIBLES de la HISTORIA | El Precio de Seguir Vivo', 'Secuestros'),
     ]
 
     def test_reconoce_series_existentes_por_palabra_clave(self):
@@ -285,10 +288,11 @@ class SeriesDataMutationTests(unittest.TestCase):
         self.assertIn(104, nums)
         self.assertNotIn(999, nums)
 
-    def test_series_names_in_data_devuelve_las_14_series_reales(self):
+    def test_series_names_in_data_devuelve_las_15_series_reales(self):
         nombres = cne.series_names_in_data(self.real_text)
-        self.assertEqual(len(nombres), 14)
+        self.assertEqual(len(nombres), 15)
         self.assertIn("La Mafia", nombres)
+        self.assertIn("Secuestros", nombres)
 
     def test_existing_doc_video_ids_incluye_los_documentales_conocidos(self):
         ids = cne.existing_doc_video_ids(self.real_text)
