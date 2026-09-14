@@ -26,6 +26,14 @@ import check_new_episodes as cne  # noqa: E402
 
 ROOT = Path(__file__).resolve().parent.parent
 REAL_SERIES_DATA = ROOT / "assets" / "series-data.js"
+# Congelado a propósito (snapshot de assets/series-data.js de cuando el
+# podcast iba por el #104): a diferencia de REAL_SERIES_DATA, este archivo
+# NUNCA debe actualizarse. MainOrchestrationTests lo usa como "estado
+# existente" y simula el #105 (y a veces el #106) como episodio nuevo — si
+# apuntara al archivo real, cada vez que el propio script en producción
+# añadiera esos episodios de verdad, los tests empezarían a fallar (ya
+# pasó: ver el historial de Actions de agosto-septiembre de 2026).
+FROZEN_SERIES_DATA = ROOT / "scripts" / "testdata" / "series-data-fixture.js"
 
 
 # ---------------------------------------------------------------------------
@@ -437,9 +445,10 @@ class UpdateEpisodeCountNoteTests(unittest.TestCase):
 class MainOrchestrationTests(unittest.TestCase):
     """main(): la pieza que nunca se había probado de punta a punta.
 
-    Aísla SERIES_DATA e INDEX_HTML en archivos temporales (copias de los
-    reales) y mockea fetch() — así se ejercita el flujo completo (RSS ->
-    clasificar -> escribir -> resumen JSON) sin tocar ni el repo ni la red.
+    Aísla SERIES_DATA e INDEX_HTML en archivos temporales y mockea fetch()
+    — así se ejercita el flujo completo (RSS -> clasificar -> escribir ->
+    resumen JSON) sin tocar ni el repo ni la red. El "estado existente" es
+    FROZEN_SERIES_DATA (snapshot fijo, no el archivo real: ver su comentario).
     """
 
     def setUp(self):
@@ -449,7 +458,7 @@ class MainOrchestrationTests(unittest.TestCase):
         self.addCleanup(self.tmpdir.cleanup)
 
         self.series_data = Path(self.tmpdir.name) / "series-data.js"
-        shutil.copy(REAL_SERIES_DATA, self.series_data)
+        shutil.copy(FROZEN_SERIES_DATA, self.series_data)
         self.index_html = Path(self.tmpdir.name) / "index.html"
         self.index_html.write_text(
             "<p>103 episodios (5 de ellos solo disponibles en YouTube).</p>", encoding="utf-8"

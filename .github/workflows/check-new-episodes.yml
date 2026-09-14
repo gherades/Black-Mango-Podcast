@@ -2,8 +2,8 @@ name: Buscar episodios nuevos
 
 on:
   schedule:
-    # Lunes 09:00 UTC. El podcast publica ~semanalmente; ajustar si cambia el ritmo.
-    - cron: "0 9 * * 1"
+    # Jueves 09:00 UTC, que es cuando se publican los episodios nuevos.
+    - cron: "0 9 * * 4"
   workflow_dispatch: {} # botón "Run workflow" para lanzarlo a mano
 
 permissions:
