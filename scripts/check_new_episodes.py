@@ -301,18 +301,15 @@ def js_doc_entry(title, yt_url, indent="  "):
 
 
 def insert_into_documentales(series_js_text, entry_line):
-    # a diferencia de insert_into_standalone (antepone), aquí se añade al
-    # FINAL: los documentales ya existentes en el archivo están en orden
-    # cronológico ascendente (el más antiguo primero), y se mantiene ese
-    # mismo orden.
+    # el más nuevo va arriba del todo (igual que insert_into_standalone):
+    # en el sitio se muestra en el mismo orden que el array, así que el
+    # documental recién publicado debe quedar primero en la lista.
     marker = "const DOCUMENTALES = ["
     pos = series_js_text.find(marker)
     if pos == -1:
         raise RuntimeError(f"no se encontró '{marker}' en series-data.js")
-    close_pos = series_js_text.find("\n];", pos)
-    if close_pos == -1:
-        raise RuntimeError("no se encontró el cierre de DOCUMENTALES en series-data.js")
-    return series_js_text[:close_pos] + "\n" + entry_line + series_js_text[close_pos:]
+    idx = pos + len(marker)
+    return series_js_text[:idx] + "\n" + entry_line + series_js_text[idx:]
 
 
 def insert_into_standalone(series_js_text, entry_line, comment=None):
@@ -391,8 +388,11 @@ def main():
     )
     docs_feed = get_youtube_playlist_videos(docs_raw)
     known_doc_ids = existing_doc_video_ids(series_js_text)
+    # a diferencia del feed del canal (más recientes primero), el de esta
+    # playlist viene en orden cronológico ascendente (el más antiguo
+    # primero) — se procesan en ese mismo orden para que, al anteponer cada
+    # uno (ver insert_into_documentales), el más nuevo acabe arriba del todo.
     new_docs = [(vid, title) for vid, title in docs_feed if vid not in known_doc_ids]
-    new_docs.reverse()  # el feed trae los más recientes primero; se insertan en orden cronológico
     print(f"  {len(docs_feed)} vídeos en la playlist, {len(new_docs)} nuevo(s)")
 
     if not new_ones and not new_docs:

@@ -317,12 +317,14 @@ class SeriesDataMutationTests(unittest.TestCase):
         self.assertTrue(entry.rstrip().endswith('},'))
         self.assertIn('ytUrl: "https://www.youtube.com/watch?v=X"', entry)
 
-    def test_insert_into_documentales_anade_al_final_no_al_principio(self):
+    def test_insert_into_documentales_antepone_la_entrada(self):
+        # el más nuevo se muestra el primero en el sitio (renderDocs pinta
+        # el array tal cual, sin invertirlo), así que debe quedar arriba.
         entry = cne.js_doc_entry("Nuevo documental", "https://www.youtube.com/watch?v=NUEVO")
         result = cne.insert_into_documentales(self.real_text, entry)
         marker = "const DOCUMENTALES = ["
-        bloque = result[result.index(marker):result.index("\n];", result.index(marker))]
-        self.assertTrue(bloque.rstrip().endswith('watch?v=NUEVO" },'))
+        pos = result.index(marker) + len(marker)
+        self.assertIn("watch?v=NUEVO", result[pos:pos + 200])
 
     def test_insert_into_documentales_falla_con_mensaje_claro_si_falta_el_marcador(self):
         with self.assertRaises(RuntimeError) as ctx:
@@ -697,8 +699,40 @@ class MainOrchestrationTests(unittest.TestCase):
 
         nuevo_texto = self.series_data.read_text(encoding="utf-8")
         marker = "const DOCUMENTALES = ["
-        bloque = nuevo_texto[nuevo_texto.index(marker):nuevo_texto.index("\n];", nuevo_texto.index(marker))]
-        self.assertTrue(bloque.rstrip().endswith('watch?v=NUEVOID" },'))  # al final, no al principio
+        pos = nuevo_texto.index(marker) + len(marker)
+        self.assertIn("watch?v=NUEVOID", nuevo_texto[pos:pos + 200])  # arriba del todo, no al final
+
+    def test_dos_documentales_nuevos_en_un_run_el_mas_nuevo_queda_arriba(self):
+        # la playlist llega en orden cronológico ascendente (ver comentario
+        # en main()); con dos nuevos en el mismo lote, el segundo (más
+        # nuevo) debe acabar por encima del primero tras anteponer los dos.
+        playlist_con_dos_novedades = DOCS_PLAYLIST_FIXTURE.replace(
+            "</feed>",
+            '<entry><title>Documental más antiguo de los dos nuevos</title>'
+            '<yt:videoId>VIEJO</yt:videoId></entry>'
+            '<entry><title>Documental más nuevo de los dos</title>'
+            '<yt:videoId>NUEVO</yt:videoId></entry></feed>',
+        )
+
+        def fetch_dos_docs(url):
+            if "playlist_id=" in url:
+                return playlist_con_dos_novedades.encode("utf-8")
+            return fake_fetch(url)
+
+        with patch("check_new_episodes.fetch", side_effect=fetch_dos_docs), \
+             patch.object(sys, "argv", ["check_new_episodes.py"]):
+            (code,), salida = silent(lambda: (cne.main(),))
+
+        resumen = json.loads(salida.rsplit("=== RESUMEN JSON ===", 1)[1].strip())
+        self.assertEqual([d["videoId"] for d in resumen["added_docs"]], ["VIEJO", "NUEVO"])
+
+        nuevo_texto = self.series_data.read_text(encoding="utf-8")
+        marker = "const DOCUMENTALES = ["
+        pos_nuevo = nuevo_texto.index("watch?v=NUEVO")
+        pos_viejo = nuevo_texto.index("watch?v=VIEJO")
+        pos_marker = nuevo_texto.index(marker)
+        self.assertLess(pos_marker, pos_nuevo)
+        self.assertLess(pos_nuevo, pos_viejo)  # el más nuevo, más arriba
 
     def test_documental_nuevo_sin_episodios_nuevos_igual_va_directo_a_main(self):
         # el caso que motivó esto: algunas semanas el podcast no saca
