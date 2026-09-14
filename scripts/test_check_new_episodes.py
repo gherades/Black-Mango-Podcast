@@ -27,6 +27,7 @@ import check_new_episodes as cne  # noqa: E402
 
 ROOT = Path(__file__).resolve().parent.parent
 REAL_SERIES_DATA = ROOT / "assets" / "series-data.js"
+REAL_MAP_DATA = ROOT / "assets" / "map-data.js"
 # Congelado a propósito (snapshot de assets/series-data.js de cuando el
 # podcast iba por el #104): a diferencia de REAL_SERIES_DATA, este archivo
 # NUNCA debe actualizarse. MainOrchestrationTests lo usa como "estado
@@ -99,6 +100,21 @@ DOCS_PLAYLIST_FIXTURE = """<?xml version="1.0"?>
 <entry><title>ENTRAMOS en el INTERIOR de un VOLCÁN - Un día TRABAJANDO en el INFIERNO</title>
 <yt:videoId>1WL7xcqN4rQ</yt:videoId></entry>
 </feed>"""
+
+# Fixture mínimo de map-data.js para MainOrchestrationTests: ninguno de los
+# títulos de los demás fixtures (RSS_FIXTURE, etc.) menciona "China" ni
+# "Rusia", así que por defecto esto no se toca en los tests que no hablan
+# del mapa. Misma forma que el archivo real (ver assets/map-data.js).
+MAP_FIXTURE = (
+    'const MAP_LOCATIONS = [\n'
+    '  { name: "China", xPct: 74.42, yPct: 34.88, episodes: [\n'
+    '    { title: "Black Mango #23 - La Historia Oculta de China", url: "https://x", appleUrl: "", ivooxUrl: "", ytUrl: "" },\n'
+    '  ] },\n'
+    '  { name: "Rusia", xPct: 72.34, yPct: 19.55, episodes: [\n'
+    '    { title: "Black Mango #13 - Vladímir Putin", url: "https://y", appleUrl: "", ivooxUrl: "", ytUrl: "" },\n'
+    '  ] },\n'
+    '];\n'
+)
 
 
 def fake_fetch(url):
@@ -349,6 +365,63 @@ class SeriesDataMutationTests(unittest.TestCase):
         self.assertIn("Una Serie Sin Keyword", salida)
 
 
+class MapDataMutationTests(unittest.TestCase):
+    """Las funciones que tocan assets/map-data.js: añadir un episodio a una
+    chincheta YA existente. Crear una chincheta nueva (elegir xPct/yPct)
+    sigue siendo manual a propósito — ver el comentario de MAP_KEYWORDS."""
+
+    @classmethod
+    def setUpClass(cls):
+        cls.real_map_text = REAL_MAP_DATA.read_text(encoding="utf-8")
+
+    def test_map_location_names_incluye_las_ubicaciones_conocidas(self):
+        nombres = cne.map_location_names(self.real_map_text)
+        self.assertIn("China", nombres)
+        self.assertIn("Cuba", nombres)
+
+    def test_find_map_location_reconoce_un_pais_ya_en_el_mapa(self):
+        conocidas = cne.map_location_names(self.real_map_text)
+        ubicacion = cne.find_map_location(
+            "Black Mango #101 - LA MAFIA CHINA | Las Tríadas", conocidas
+        )
+        self.assertEqual(ubicacion, "China")
+
+    def test_find_map_location_ignora_un_pais_sin_chincheta_todavia(self):
+        # ver el comentario de MAP_KEYWORDS: nunca se sugiere crear una
+        # chincheta nueva sola, así que un país no listado en `conocidas`
+        # (aunque tenga keyword) debe devolver None, no reventar.
+        ubicacion = cne.find_map_location("Black Mango #200 - SUIZA", known_locations=[])
+        self.assertIsNone(ubicacion)
+
+    def test_find_map_location_sin_pais_en_el_titulo_devuelve_none(self):
+        conocidas = cne.map_location_names(self.real_map_text)
+        self.assertIsNone(cne.find_map_location("Black Mango #90 - Gabby Petito", conocidas))
+
+    def test_find_map_location_franco_no_se_confunde_con_francia(self):
+        # regresión: "franc" a secas habría casado con "Franco" (España)
+        conocidas = cne.map_location_names(self.real_map_text)
+        ubicacion = cne.find_map_location("Los Crímenes de Franco", conocidas)
+        self.assertIsNone(ubicacion)  # "España" no tiene keyword "franco"
+
+    def test_js_map_entry_genera_un_objeto_js_bien_formado(self):
+        entry = cne.js_map_entry('Título "raro"', "https://s", "https://a", "https://i", "https://y")
+        self.assertTrue(entry.strip().startswith("{ title:"))
+        self.assertTrue(entry.rstrip().endswith("},"))
+        self.assertIn('ytUrl: "https://y"', entry)
+        self.assertNotIn("epnum", entry)  # a diferencia de js_episode_entry
+
+    def test_insert_into_map_location_anade_al_final_de_esa_chincheta(self):
+        entry = cne.js_map_entry("Nuevo episodio", "https://s", "", "", "")
+        result = cne.insert_into_map_location(self.real_map_text, "China", entry)
+        bloque = result[result.index('name: "China"'):result.index('] },', result.index('name: "China"'))]
+        self.assertIn("Nuevo episodio", bloque)
+
+    def test_insert_into_map_location_ubicacion_inexistente_lanza_error_claro(self):
+        with self.assertRaises(RuntimeError) as ctx:
+            cne.insert_into_map_location(self.real_map_text, "Narnia", "x")
+        self.assertIn("Narnia", str(ctx.exception))
+
+
 class NetworkParsingTests(unittest.TestCase):
     """get_spotify_episodes / get_apple_url / get_youtube_url / get_ivoox_url.
 
@@ -555,10 +628,11 @@ class BumpCacheVersionTests(unittest.TestCase):
 class MainOrchestrationTests(unittest.TestCase):
     """main(): la pieza que nunca se había probado de punta a punta.
 
-    Aísla SERIES_DATA e INDEX_HTML en archivos temporales y mockea fetch()
-    — así se ejercita el flujo completo (RSS -> clasificar -> escribir ->
-    resumen JSON) sin tocar ni el repo ni la red. El "estado existente" es
-    FROZEN_SERIES_DATA (snapshot fijo, no el archivo real: ver su comentario).
+    Aísla SERIES_DATA, MAP_DATA e INDEX_HTML en archivos temporales y
+    mockea fetch() — así se ejercita el flujo completo (RSS -> clasificar
+    -> escribir -> resumen JSON) sin tocar ni el repo ni la red. El
+    "estado existente" es FROZEN_SERIES_DATA (snapshot fijo, no el archivo
+    real: ver su comentario) y MAP_FIXTURE para el mapa.
     """
 
     def setUp(self):
@@ -569,6 +643,8 @@ class MainOrchestrationTests(unittest.TestCase):
 
         self.series_data = Path(self.tmpdir.name) / "series-data.js"
         shutil.copy(FROZEN_SERIES_DATA, self.series_data)
+        self.map_data = Path(self.tmpdir.name) / "map-data.js"
+        self.map_data.write_text(MAP_FIXTURE, encoding="utf-8")
         self.index_html = Path(self.tmpdir.name) / "index.html"
         self.index_html.write_text(
             "<p>103 episodios (5 de ellos solo disponibles en YouTube).</p>\n"
@@ -579,12 +655,15 @@ class MainOrchestrationTests(unittest.TestCase):
         )
 
         self._orig_series_data = cne.SERIES_DATA
+        self._orig_map_data = cne.MAP_DATA
         self._orig_index_html = cne.INDEX_HTML
         cne.SERIES_DATA = self.series_data
+        cne.MAP_DATA = self.map_data
         cne.INDEX_HTML = self.index_html
 
     def tearDown(self):
         cne.SERIES_DATA = self._orig_series_data
+        cne.MAP_DATA = self._orig_map_data
         cne.INDEX_HTML = self._orig_index_html
 
     def _run_main(self, argv_extra=()):
@@ -610,6 +689,40 @@ class MainOrchestrationTests(unittest.TestCase):
         self.assertIn("black-mango-105-la-mafia-suiza", nuevo_texto)  # y el de iVoox también
         # el #104 del fixture YA estaba en los datos reales: no debe duplicarse
         self.assertEqual(nuevo_texto.count("epnum: 104"), 1)
+
+    def test_episodio_que_menciona_un_pais_del_mapa_se_anade_tambien_ahi(self):
+        rss_china = RSS_FIXTURE.replace(
+            "Black Mango #105 - LA MAFIA SUIZA | episodio de prueba",
+            "Black Mango #105 - LA MAFIA CHINA | episodio de prueba",
+        )
+
+        def fetch_china(url):
+            if "anchor.fm" in url:
+                return rss_china.encode("utf-8")
+            return fake_fetch(url)
+
+        with patch("check_new_episodes.fetch", side_effect=fetch_china), \
+             patch.object(sys, "argv", ["check_new_episodes.py"]):
+            (code,), salida = silent(lambda: (cne.main(),))
+
+        resumen = json.loads(salida.rsplit("=== RESUMEN JSON ===", 1)[1].strip())
+        self.assertEqual(resumen["added_map"], [{"epnum": 105, "title": "Black Mango #105 - LA MAFIA CHINA | episodio de prueba", "location": "China"}])
+
+        nuevo_mapa = self.map_data.read_text(encoding="utf-8")
+        bloque_china = nuevo_mapa[nuevo_mapa.index('name: "China"'):nuevo_mapa.index('] },', nuevo_mapa.index('name: "China"'))]
+        self.assertIn("LA MAFIA CHINA", bloque_china)
+        # la chincheta de Rusia no debe verse afectada
+        bloque_rusia = nuevo_mapa[nuevo_mapa.index('name: "Rusia"'):nuevo_mapa.index('] },', nuevo_mapa.index('name: "Rusia"'))]
+        self.assertNotIn("LA MAFIA CHINA", bloque_rusia)
+
+    def test_episodio_sin_pais_conocido_no_toca_el_mapa(self):
+        # el fixture normal trae "LA MAFIA SUIZA" (#105): Suiza no tiene
+        # chincheta todavía, así que map-data.js no debe tocarse.
+        original_mapa = self.map_data.read_text(encoding="utf-8")
+        code, salida = self._run_main()
+        resumen = json.loads(salida.rsplit("=== RESUMEN JSON ===", 1)[1].strip())
+        self.assertEqual(resumen["added_map"], [])
+        self.assertEqual(self.map_data.read_text(encoding="utf-8"), original_mapa)
 
     def test_episodio_sin_serie_ni_patron_de_saga_va_suelto_directo_a_main(self):
         # a diferencia del "SAGA NUEVA 1" (mayúsculas + número -> revisión),

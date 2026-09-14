@@ -32,6 +32,12 @@ revisión — pertenecer a esa playlist ya es la curación). Como el podcast no
 publica todas las semanas por igual (algunas semanas hay documental en vez
 de episodio), esto se comprueba siempre, aunque no haya episodios nuevos.
 
+Un episodio nuevo cuyo título mencione un país que YA tiene chincheta en
+assets/map-data.js (ver MAP_KEYWORDS) se añade también ahí. Nunca se crea
+una chincheta nueva sola: elegir dónde cae un país en la ilustración exige
+calibrar xPct/yPct a mano contra el dibujo, así que un país sin chincheta
+todavía sigue siendo trabajo manual, igual que antes.
+
 Uso:
   python3 scripts/check_new_episodes.py            # aplica los cambios
   python3 scripts/check_new_episodes.py --dry-run  # solo informa, no toca nada
@@ -56,6 +62,7 @@ except ImportError:
 
 ROOT = Path(__file__).resolve().parent.parent
 SERIES_DATA = ROOT / "assets" / "series-data.js"
+MAP_DATA = ROOT / "assets" / "map-data.js"
 INDEX_HTML = ROOT / "index.html"
 
 # <script src> locales de index.html a los que se les añade "?v=<timestamp>"
@@ -93,6 +100,34 @@ SERIES_KEYWORDS = [
     (r"secta", "Las Peores Sectas de la Historia"),
     (r"secuestro", "Secuestros"),
     (r"\bterrible", "Los Terribles"),  # catch-all genérico: va el último a propósito
+]
+
+# Palabra clave -> ubicación YA existente en MAP_LOCATIONS (assets/map-data.js).
+# Solo sirve para AÑADIR un episodio a un país que ya tiene chincheta: nunca
+# para decidir crear una chincheta nueva. Colocar un país nuevo en el dibujo
+# (xPct/yPct) exige calibrarlo a mano contra la ilustración — no hay forma
+# fiable de que un keyword lo haga bien solo (ver el commit que añadió
+# Mongolia). Si un título menciona un país sin chincheta todavía, no pasa
+# nada automáticamente: sigue siendo trabajo manual, como siempre.
+MAP_KEYWORDS = [
+    (r"cuba", "Cuba"),
+    (r"colombia", "Colombia"),
+    (r"corea del norte", "Corea del Norte"),
+    (r"jap[oó]n", "Japón"),
+    (r"china", "China"),
+    (r"egipt", "Egipto"),
+    (r"grec|griega", "Grecia"),
+    (r"italia", "Italia"),
+    (r"israel|palestin", "Israel / Palestina"),
+    (r"m[eé]xic", "México"),
+    (r"rusia|\brusa\b", "Rusia"),
+    (r"ingles", "Reino Unido"),
+    (r"francia|frances", "Francia"),  # NO "franc" a secas: colisiona con "Franco" (España)
+    (r"indonesia", "Indonesia"),
+    (r"vikingo|n[oó]rdic|escandinav", "Escandinavia"),
+    (r"ucrania|chernobyl", "Ucrania"),
+    (r"espa[ñn]a", "España"),
+    (r"mongol", "Mongolia"),
 ]
 
 # Detecta "FRASE EN MAYÚSCULAS + número" (el patrón que usan los nombres de
@@ -286,6 +321,22 @@ def classify(title):
     return None, False, None
 
 
+def map_location_names(map_js_text):
+    return re.findall(r'name: "([^"]+)"', map_js_text)
+
+
+def find_map_location(title, known_locations):
+    """Devuelve el nombre de una ubicación de MAP_LOCATIONS si el título la
+    menciona, o None. `known_locations` filtra contra lo que de verdad hay
+    en map-data.js: si algún día se renombra o se quita una chincheta, la
+    keyword deja de aplicar sola en vez de reventar insert_into_map_location."""
+    low = title.lower()
+    for pattern, location_name in MAP_KEYWORDS:
+        if location_name in known_locations and re.search(pattern, low):
+            return location_name
+    return None
+
+
 def js_string(value):
     """Escapa un valor como literal de string de JS/JSON válido.
 
@@ -300,6 +351,12 @@ def js_string(value):
 
 def js_episode_entry(epnum, title, spotify_url, apple_url, ivoox_url, yt_url, indent="    "):
     parts = [f'epnum: {epnum}', f'title: {js_string(title)}', f'url: {js_string(spotify_url)}',
+              f'appleUrl: {js_string(apple_url)}', f'ivooxUrl: {js_string(ivoox_url)}', f'ytUrl: {js_string(yt_url)}']
+    return indent + "{ " + ", ".join(parts) + " },"
+
+
+def js_map_entry(title, spotify_url, apple_url, ivoox_url, yt_url, indent="    "):
+    parts = [f'title: {js_string(title)}', f'url: {js_string(spotify_url)}',
               f'appleUrl: {js_string(apple_url)}', f'ivooxUrl: {js_string(ivoox_url)}', f'ytUrl: {js_string(yt_url)}']
     return indent + "{ " + ", ".join(parts) + " },"
 
@@ -391,6 +448,22 @@ def insert_into_series(series_js_text, series_name, entry_line):
     return new_text
 
 
+def insert_into_map_location(map_js_text, location_name, entry_line):
+    # mismo enfoque que insert_into_series (añadir al final, cierre
+    # reinsertado tal cual) — la única diferencia de forma es que aquí el
+    # marcador lleva "xPct/yPct" entre el nombre y "episodes: [".
+    pattern = re.compile(
+        r'(\{ name: "' + re.escape(location_name) + r'", xPct: [\d.]+, yPct: [\d.]+, episodes: \[)(.*?)(\n  \] \})',
+        re.S,
+    )
+    def repl(m):
+        return m.group(1) + m.group(2) + "\n" + entry_line + m.group(3)
+    new_text, n = pattern.subn(repl, map_js_text, count=1)
+    if n != 1:
+        raise RuntimeError(f"no se encontró la ubicación '{location_name}' en map-data.js")
+    return new_text
+
+
 def main():
     dry_run = "--dry-run" in sys.argv
 
@@ -402,6 +475,9 @@ def main():
     known = existing_epnums(series_js_text)
     print(f"  {len(known)} episodios ya en series-data.js (más alto: #{max(known)})")
     warn_uncovered_series(series_js_text)
+
+    map_js_text = MAP_DATA.read_text(encoding="utf-8")
+    known_map_locations = map_location_names(map_js_text)
 
     new_ones = sorted(
         (ep for ep in feed_episodes if ep[0] not in known),
@@ -425,12 +501,13 @@ def main():
         print("\nNo hay episodios ni documentales nuevos. Nada que hacer.")
         print("\n=== RESUMEN JSON ===")
         print(json.dumps(
-            {"added": [], "added_docs": [], "needs_review": [], "route": "none"}, ensure_ascii=False
+            {"added": [], "added_docs": [], "added_map": [], "needs_review": [], "route": "none"}, ensure_ascii=False
         ))
         return 0
 
     added = []
     added_docs = []
+    added_map = []
     needs_review = []
 
     for vid, title in new_docs:
@@ -492,6 +569,13 @@ def main():
             print("  -> sin serie reconocida, se añade como episodio suelto")
             series_js_text = insert_into_standalone(series_js_text, entry_line)
 
+        map_location = find_map_location(title, known_map_locations)
+        if map_location:
+            print(f"  -> también se añade al mapa en '{map_location}'")
+            map_entry_line = js_map_entry(title, spotify_url, apple_url, ivoox_url, yt_url)
+            map_js_text = insert_into_map_location(map_js_text, map_location, map_entry_line)
+            added_map.append({"epnum": epnum, "title": title, "location": map_location})
+
         added.append((epnum, title, series_name))
 
     if dry_run:
@@ -500,6 +584,9 @@ def main():
         SERIES_DATA.write_text(series_js_text, encoding="utf-8")
         print(f"\nEscrito {SERIES_DATA} con {len(added)} episodio(s) y {len(added_docs)} documental(es) nuevo(s).")
         update_episode_count_note(series_js_text)
+        if added_map:
+            MAP_DATA.write_text(map_js_text, encoding="utf-8")
+            print(f"Escrito {MAP_DATA} con {len(added_map)} episodio(s) añadido(s) al mapa.")
         INDEX_HTML.write_text(bump_cache_version(INDEX_HTML.read_text(encoding="utf-8")), encoding="utf-8")
 
     # resumen máquina-legible para el workflow de GitHub Actions: si algo
@@ -510,6 +597,7 @@ def main():
     summary = {
         "added": [{"epnum": e, "title": t, "series": s} for e, t, s in added],
         "added_docs": added_docs,
+        "added_map": added_map,
         "needs_review": [{"epnum": e, "title": t, "reason": r} for e, t, r in needs_review],
         "route": "pull_request" if needs_review else "main",
     }

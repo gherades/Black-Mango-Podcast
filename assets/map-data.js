@@ -78,6 +78,9 @@ const MAP_LOCATIONS = [
   { name: "Ucrania", xPct: 55.91, yPct: 25.42, episodes: [
     { title: "Black Mango #87 – CHERNOBYL | El mayor DESASTRE nuclear de la HISTORIA", url: "https://open.spotify.com/episode/2mVlNzCtarSq9OYH57gth3", appleUrl: "https://podcasts.apple.com/es/podcast/black-mango-87-chernobyl-el-mayor-desastre-nuclear/id1726276206?i=1000748538311", ivooxUrl: "https://www.ivoox.com/black-mango-87-8211-chernobyl-el-mayor-audios-mp3_rf_167937994_1.html", ytUrl: "https://www.youtube.com/watch?v=xhZ4vPSIKns" },
   ] },
+  { name: "Mongolia", xPct: 74, yPct: 28, episodes: [
+    { title: "Black Mango #107 - EL TERRIBLE IMPERIO MONGOL | Cómo Gengis Kan conquistó el mundo", url: "https://podcasters.spotify.com/pod/show/blackmangopodcast/episodes/Black-Mango-107---EL-TERRIBLE-IMPERIO-MONGOL--Cmo-Gengis-Kan-conquist-el-mundo-e3nr07f", appleUrl: "https://podcasts.apple.com/es/podcast/black-mango-107-el-terrible-imperio-mongol-c%C3%B3mo/id1726276206?i=1000785775532", ivooxUrl: "https://www.ivoox.com/black-mango-107-el-terrible-imperio-mongol-audios-mp3_rf_179483205_1.html", ytUrl: "https://www.youtube.com/watch?v=aedbDZL1VUs" },
+  ] },
   { name: "España", xPct: 47.02, yPct: 31.46, episodes: [
     { title: "Black Mango #80 - Los Crímenes de Franco | Paco Etxeberria | Fosas, Torturas y Desapariciones", url: "https://open.spotify.com/episode/5B51W4NdL5QwmqNYy6PogD", appleUrl: "https://podcasts.apple.com/es/podcast/black-mango-80-los-cr%C3%ADmenes-de-franco-paco/id1726276206?i=1000738341479", ivooxUrl: "https://www.ivoox.com/black-mango-80-los-crimenes-franco-audios-mp3_rf_163216983_1.html", ytUrl: "https://www.youtube.com/watch?v=ef2ONeHy6vQ" },
   ] },

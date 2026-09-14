@@ -60,19 +60,25 @@ jobs:
           route=$(python3 -c "import json,os; print(json.loads(os.environ['SUMMARY_JSON']).get('route','none'))")
           added=$(python3 -c "import json,os; print(len(json.loads(os.environ['SUMMARY_JSON']).get('added',[])))")
           added_docs=$(python3 -c "import json,os; print(len(json.loads(os.environ['SUMMARY_JSON']).get('added_docs',[])))")
+          added_map=$(python3 -c "import json,os; print(len(json.loads(os.environ['SUMMARY_JSON']).get('added_map',[])))")
           echo "route=$route" >> "$GITHUB_OUTPUT"
           echo "added=$added" >> "$GITHUB_OUTPUT"
           echo "added_docs=$added_docs" >> "$GITHUB_OUTPUT"
+          echo "added_map=$added_map" >> "$GITHUB_OUTPUT"
 
       - name: Publicar directo a main (casos claros)
         if: steps.route.outputs.route == 'main'
         env:
           ADDED_COUNT: ${{ steps.route.outputs.added }}
           ADDED_DOCS_COUNT: ${{ steps.route.outputs.added_docs }}
+          ADDED_MAP_COUNT: ${{ steps.route.outputs.added_map }}
         run: |
           msg="Añadir ${ADDED_COUNT} episodio(s) nuevo(s)"
           if [ "$ADDED_DOCS_COUNT" != "0" ]; then
             msg="$msg y ${ADDED_DOCS_COUNT} documental(es) nuevo(s)"
+          fi
+          if [ "$ADDED_MAP_COUNT" != "0" ]; then
+            msg="$msg (${ADDED_MAP_COUNT} al mapa)"
           fi
           git add -A
           git commit -m "$msg (automático)"
