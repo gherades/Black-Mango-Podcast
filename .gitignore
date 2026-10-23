@@ -5,3 +5,9 @@ htmlcov/
 
 node_modules/
 coverage/
+
+# Secretos y configuración local: nunca al repo (el workflow automático
+# hace "git add -A", así que esto también lo protege en CI)
+.env
+.env.*
+!.env.example
